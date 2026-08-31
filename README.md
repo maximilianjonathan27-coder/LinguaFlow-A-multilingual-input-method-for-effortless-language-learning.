@@ -1208,3 +1208,46 @@ It is to make them **learn more from the time they already spend typing**.
 > p = Path("/mnt/data/README.md")
 > p.write_text(content, encoding="utf-8")
 > print(p)
+
+---
+
+# Prototype Development
+
+`LinguaFlowPrototype` is the first native macOS SwiftUI visual prototype. It simulates candidate translation and Micro-Recall inside its own window; it is not yet a system input method.
+
+## Requirements
+
+- macOS 14 or later
+- Xcode 26.6 installed at `/Applications/Xcode.app`
+- No paid Apple Developer account is required for local development
+
+## Open in Xcode
+
+```bash
+open LinguaFlowPrototype.xcodeproj
+```
+
+Choose the `LinguaFlowPrototype` scheme and `My Mac`, then press the Run button.
+
+## Build and run
+
+```bash
+./script/build_and_run.sh
+```
+
+The script selects the full Xcode installation locally, so it does not require a global `xcode-select` change.
+
+## Test
+
+```bash
+./script/build_and_run.sh --test
+./script/build_and_run.sh --verify
+```
+
+Try these inputs in the prototype:
+
+```text
+huiyi · anpai · yanqi · shenqing · fangfa
+```
+
+All candidate data and Seen counts stay on the Mac. This prototype makes no network requests and requests no privacy-sensitive permissions.

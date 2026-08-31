@@ -1,0 +1,418 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		200000000000000000000001 /* LinguaFlowPrototypeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 300000000000000000000001 /* LinguaFlowPrototypeApp.swift */; };
+		200000000000000000000002 /* Candidate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 300000000000000000000002 /* Candidate.swift */; };
+		200000000000000000000003 /* CandidateCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 300000000000000000000003 /* CandidateCatalog.swift */; };
+		200000000000000000000004 /* ExposureStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 300000000000000000000004 /* ExposureStore.swift */; };
+		200000000000000000000005 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 300000000000000000000005 /* ContentView.swift */; };
+		200000000000000000000006 /* InputSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 300000000000000000000006 /* InputSection.swift */; };
+		200000000000000000000007 /* CandidateListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 300000000000000000000007 /* CandidateListView.swift */; };
+		200000000000000000000008 /* CandidateRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 300000000000000000000008 /* CandidateRowView.swift */; };
+		200000000000000000000009 /* CandidateStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 300000000000000000000009 /* CandidateStateView.swift */; };
+		20000000000000000000000A /* CandidateCatalogTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30000000000000000000000A /* CandidateCatalogTests.swift */; };
+		20000000000000000000000B /* ExposureStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30000000000000000000000B /* ExposureStoreTests.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		400000000000000000000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 500000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 100000000000000000000001;
+			remoteInfo = LinguaFlowPrototype;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		300000000000000000000001 /* LinguaFlowPrototypeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinguaFlowPrototypeApp.swift; sourceTree = "<group>"; };
+		300000000000000000000002 /* Candidate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Candidate.swift; sourceTree = "<group>"; };
+		300000000000000000000003 /* CandidateCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CandidateCatalog.swift; sourceTree = "<group>"; };
+		300000000000000000000004 /* ExposureStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExposureStore.swift; sourceTree = "<group>"; };
+		300000000000000000000005 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		300000000000000000000006 /* InputSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputSection.swift; sourceTree = "<group>"; };
+		300000000000000000000007 /* CandidateListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CandidateListView.swift; sourceTree = "<group>"; };
+		300000000000000000000008 /* CandidateRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CandidateRowView.swift; sourceTree = "<group>"; };
+		300000000000000000000009 /* CandidateStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CandidateStateView.swift; sourceTree = "<group>"; };
+		30000000000000000000000A /* CandidateCatalogTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CandidateCatalogTests.swift; sourceTree = "<group>"; };
+		30000000000000000000000B /* ExposureStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExposureStoreTests.swift; sourceTree = "<group>"; };
+		30000000000000000000000C /* LinguaFlowPrototype.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LinguaFlowPrototype.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		30000000000000000000000D /* LinguaFlowPrototypeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LinguaFlowPrototypeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		600000000000000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		600000000000000000000002 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		700000000000000000000001 = {
+			isa = PBXGroup;
+			children = (
+				700000000000000000000002 /* LinguaFlowPrototype */,
+				700000000000000000000008 /* LinguaFlowPrototypeTests */,
+				700000000000000000000009 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		700000000000000000000002 /* LinguaFlowPrototype */ = {
+			isa = PBXGroup;
+			children = (
+				700000000000000000000003 /* App */,
+				700000000000000000000004 /* Models */,
+				700000000000000000000005 /* Stores */,
+				700000000000000000000006 /* Views */,
+				700000000000000000000007 /* Support */,
+			);
+			path = LinguaFlowPrototype;
+			sourceTree = "<group>";
+		};
+		700000000000000000000003 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				300000000000000000000001 /* LinguaFlowPrototypeApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		700000000000000000000004 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				300000000000000000000002 /* Candidate.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		700000000000000000000005 /* Stores */ = {
+			isa = PBXGroup;
+			children = (
+				300000000000000000000004 /* ExposureStore.swift */,
+			);
+			path = Stores;
+			sourceTree = "<group>";
+		};
+		700000000000000000000006 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				300000000000000000000005 /* ContentView.swift */,
+				300000000000000000000006 /* InputSection.swift */,
+				300000000000000000000007 /* CandidateListView.swift */,
+				300000000000000000000008 /* CandidateRowView.swift */,
+				300000000000000000000009 /* CandidateStateView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		700000000000000000000007 /* Support */ = {
+			isa = PBXGroup;
+			children = (
+				300000000000000000000003 /* CandidateCatalog.swift */,
+			);
+			path = Support;
+			sourceTree = "<group>";
+		};
+		700000000000000000000008 /* LinguaFlowPrototypeTests */ = {
+			isa = PBXGroup;
+			children = (
+				30000000000000000000000A /* CandidateCatalogTests.swift */,
+				30000000000000000000000B /* ExposureStoreTests.swift */,
+			);
+			path = LinguaFlowPrototypeTests;
+			sourceTree = "<group>";
+		};
+		700000000000000000000009 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				30000000000000000000000C /* LinguaFlowPrototype.app */,
+				30000000000000000000000D /* LinguaFlowPrototypeTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		100000000000000000000001 /* LinguaFlowPrototype */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 800000000000000000000002 /* Build configuration list for PBXNativeTarget "LinguaFlowPrototype" */;
+			buildPhases = (
+				900000000000000000000001 /* Sources */,
+				600000000000000000000001 /* Frameworks */,
+				A00000000000000000000001 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = LinguaFlowPrototype;
+			productName = LinguaFlowPrototype;
+			productReference = 30000000000000000000000C /* LinguaFlowPrototype.app */;
+			productType = "com.apple.product-type.application";
+		};
+		100000000000000000000002 /* LinguaFlowPrototypeTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 800000000000000000000003 /* Build configuration list for PBXNativeTarget "LinguaFlowPrototypeTests" */;
+			buildPhases = (
+				900000000000000000000002 /* Sources */,
+				600000000000000000000002 /* Frameworks */,
+				A00000000000000000000002 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				B00000000000000000000001 /* PBXTargetDependency */,
+			);
+			name = LinguaFlowPrototypeTests;
+			productName = LinguaFlowPrototypeTests;
+			productReference = 30000000000000000000000D /* LinguaFlowPrototypeTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		500000000000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2660;
+				LastUpgradeCheck = 2660;
+				TargetAttributes = {
+					100000000000000000000001 = {
+						CreatedOnToolsVersion = 26.6;
+					};
+					100000000000000000000002 = {
+						CreatedOnToolsVersion = 26.6;
+						TestTargetID = 100000000000000000000001;
+					};
+				};
+			};
+			buildConfigurationList = 800000000000000000000001 /* Build configuration list for PBXProject "LinguaFlowPrototype" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 700000000000000000000001;
+			productRefGroup = 700000000000000000000009 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				100000000000000000000001 /* LinguaFlowPrototype */,
+				100000000000000000000002 /* LinguaFlowPrototypeTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A00000000000000000000001 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A00000000000000000000002 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		900000000000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				200000000000000000000001 /* LinguaFlowPrototypeApp.swift in Sources */,
+				200000000000000000000002 /* Candidate.swift in Sources */,
+				200000000000000000000003 /* CandidateCatalog.swift in Sources */,
+				200000000000000000000004 /* ExposureStore.swift in Sources */,
+				200000000000000000000005 /* ContentView.swift in Sources */,
+				200000000000000000000006 /* InputSection.swift in Sources */,
+				200000000000000000000007 /* CandidateListView.swift in Sources */,
+				200000000000000000000008 /* CandidateRowView.swift in Sources */,
+				200000000000000000000009 /* CandidateStateView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		900000000000000000000002 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				20000000000000000000000A /* CandidateCatalogTests.swift in Sources */,
+				20000000000000000000000B /* ExposureStoreTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		B00000000000000000000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 100000000000000000000001 /* LinguaFlowPrototype */;
+			targetProxy = 400000000000000000000001 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		C00000000000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		C00000000000000000000002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+			};
+			name = Release;
+		};
+		C00000000000000000000003 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = LinguaFlowPrototype;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.tianxq.LinguaFlowPrototype;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		C00000000000000000000004 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = LinguaFlowPrototype;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.tianxq.LinguaFlowPrototype;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		C00000000000000000000005 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.tianxq.LinguaFlowPrototypeTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/LinguaFlowPrototype.app/Contents/MacOS/LinguaFlowPrototype";
+			};
+			name = Debug;
+		};
+		C00000000000000000000006 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.tianxq.LinguaFlowPrototypeTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/LinguaFlowPrototype.app/Contents/MacOS/LinguaFlowPrototype";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		800000000000000000000001 /* Build configuration list for PBXProject "LinguaFlowPrototype" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C00000000000000000000001 /* Debug */,
+				C00000000000000000000002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		800000000000000000000002 /* Build configuration list for PBXNativeTarget "LinguaFlowPrototype" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C00000000000000000000003 /* Debug */,
+				C00000000000000000000004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		800000000000000000000003 /* Build configuration list for PBXNativeTarget "LinguaFlowPrototypeTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C00000000000000000000005 /* Debug */,
+				C00000000000000000000006 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 500000000000000000000001 /* Project object */;
+}
