@@ -1,577 +1,1210 @@
 # LinguaFlow
 
-### Learn languages naturally while you type.
+> **Type naturally. Learn effortlessly.**
 
 LinguaFlow is a multilingual input method designed to turn everyday typing into effortless language learning.
 
-Instead of requiring users to open a separate translation tool, look up vocabulary, or interrupt their workflow, LinguaFlow brings **real-time translations directly into the input candidate interface**.
+Instead of asking users to open a separate translator, LinguaFlow brings **real-time translations directly into the input candidate interface**. As you type, relevant translations appear alongside your input, allowing language exposure to happen naturally within the workflow.
 
-As you type, words and phrases in your selected learning language appear alongside the candidates you are already looking at. Through repeated, contextual exposure, ordinary typing becomes a natural opportunity to recognize and acquire another language.
+LinguaFlow is not designed to replace traditional translation tools or compete primarily on AI text generation. Its core purpose is different:
 
-> **Translation where you type, not where you search.**
+> **Make language learning a by-product of everyday typing.**
 
 ---
 
 ## Why LinguaFlow?
 
-Traditional language learning often requires dedicated time and attention:
+Learning a language traditionally requires deliberate study:
 
 ```text
-Open a learning app
+See an unfamiliar word
         ↓
-Study vocabulary
+Stop what you're doing
         ↓
-Memorize
+Open a dictionary / translator
         ↓
-Practice
+Search the word
         ↓
-Return to everyday life
+Read the result
+        ↓
+Return to your original task
 ```
 
-Traditional translation tools follow a different workflow:
-
-```text
-Write something
-        ↓
-Stop typing
-        ↓
-Open a translator
-        ↓
-Enter or paste text
-        ↓
-Read the translation
-        ↓
-Return to your work
-```
+This process creates friction.
 
 LinguaFlow takes a different approach:
 
 ```text
 Type normally
-      ↓
-See translations in the candidate list
-      ↓
+     ↓
+Translation appears in the candidate list
+     ↓
+Notice the translation
+     ↓
+Keep typing
+     ↓
 Repeated exposure
-      ↓
-Micro-recall
-      ↓
-Gradual vocabulary acquisition
+     ↓
+Gradually build vocabulary
 ```
 
-The goal is not to turn every typing session into a lesson.
+The user does not need to enter a "learning mode".
 
-The goal is to make **language exposure a natural part of everyday digital life**.
+**The learning happens inside the workflow.**
 
 ---
 
-# Core Features
+# Core Concept
 
-## 1. Real-Time Translation in Input Candidates
-
-This is the foundation of LinguaFlow.
-
-Unlike conventional translators, LinguaFlow does not require users to leave their current application or manually submit text for translation.
-
-Translations appear **directly alongside input candidates while you type**.
+The defining feature of LinguaFlow is **real-time translation inside input candidates**.
 
 For example, a user typing in Chinese might see:
 
 ```text
 会议
 meeting
+conference
+appointment
 ```
 
-or:
+The translation is presented **at the moment the user is selecting an input candidate**, rather than after the text has already been entered.
+
+This creates a fundamentally different interaction from a traditional translator.
+
+### Traditional Translator
 
 ```text
-延期
-postpone
+Input
+  ↓
+Translate
+  ↓
+Read result
 ```
 
-The translation becomes part of the typing experience itself.
+### LinguaFlow
 
-This distinction is fundamental:
+```text
+Type
+  ↓
+Candidate generation
+  ↓
+Translation appears alongside candidates
+  ↓
+Continue typing
+```
 
-> **LinguaFlow integrates translation into the input process rather than adding translation after the input process.**
-
-This makes language exposure continuous, lightweight, and largely frictionless.
+The translation becomes part of the **input experience itself**.
 
 ---
 
-## 2. Multilingual Input & Learning
+# Product Philosophy
 
-LinguaFlow is designed around flexible language pairs rather than a fixed language combination.
+LinguaFlow is built around four principles.
 
-Users can choose:
+### 01 — Invisible Learning
+
+Language learning should not always feel like studying.
+
+LinguaFlow aims to make vocabulary exposure a natural consequence of typing.
+
+### 02 — Context Over Literal Translation
+
+The best translation is not necessarily the most literal one.
+
+LinguaFlow considers:
+
+* Current input context
+* User language level
+* Preferred translation style
+* Selected domain
+* Learning goals
+* Previous exposure
+
+to determine which translation is most useful.
+
+### 03 — Personalization
+
+Different users need different language environments.
+
+A student studying academic subjects should not necessarily receive the same vocabulary and expressions as someone learning casual conversational English.
+
+### 04 — Progressive Learning
+
+Most interactions should remain lightweight.
+
+Users can simply notice a translation and continue typing.
+
+When they become curious, they can progressively explore:
 
 ```text
-Input Language
-        ↓
-Learning Language
+Candidate
+   ↓
+Translation
+   ↓
+Hover
+   ↓
+Pronunciation
+   ↓
+Vocabulary Card
+   ↓
+Deeper Learning
 ```
+
+---
+
+# Core User Experience
+
+The basic LinguaFlow experience can be represented as:
+
+```text
+                 USER TYPES
+                     │
+                     ▼
+              INPUT PROCESSING
+                     │
+                     ▼
+          CONTEXT-AWARE ANALYSIS
+                     │
+          ┌──────────┴──────────┐
+          │                     │
+          ▼                     ▼
+   Input Candidates       Translation Engine
+          │                     │
+          └──────────┬──────────┘
+                     ▼
+            UNIFIED CANDIDATES
+                     │
+                     ▼
+          ┌─────────────────────┐
+          │  Candidate          │
+          │                     │
+          │  会议               │
+          │  meeting            │
+          │  conference         │
+          └─────────────────────┘
+                     │
+          ┌──────────┼──────────┐
+          ▼          ▼          ▼
+       Continue    Hover      Click
+       Typing      Pronounce  Explore
+                     │          │
+                     ▼          ▼
+                 Audio     Vocabulary Card
+                                │
+                                ▼
+                          Micro-Recall
+                                │
+                                ▼
+                         Repeated Exposure
+```
+
+---
+
+# 01 — Personalized Language Profile
+
+Before using LinguaFlow, users create a **Language Learning Profile**.
+
+The profile determines what kind of language environment LinguaFlow should create.
+
+The onboarding process uses a progressive 9-step questionnaire.
+
+```text
+01 Languages
+      ↓
+02 Learning Goal
+      ↓
+03 Interests & Domains
+      ↓
+04 Language Level
+      ↓
+05 Translation Style
+      ↓
+06 Learning Intensity
+      ↓
+07 Learning Features
+      ↓
+08 Learning Preference
+      ↓
+09 Final Preference
+      ↓
+Profile Generated
+```
+
+---
+
+## Language Selection
+
+Users select:
+
+* Input language
+* Learning language
 
 For example:
 
-* Chinese → English
-* Chinese → Japanese
-* English → Japanese
-* Japanese → English
-* Korean → English
-* Spanish → French
+```text
+🇨🇳 Chinese
+      ↓
+🇺🇸 English
+```
 
-The system is designed to support a growing range of languages without changing the fundamental user experience.
+The architecture should eventually support multiple language profiles:
 
-Users can also switch their learning language according to their current goals.
+```text
+Chinese → English
+Chinese → Japanese
+English → Spanish
+```
+
+Users can switch between profiles depending on their needs.
 
 ---
 
-## 3. Context-Aware Translation
+# 02 — Learning Goals
 
-Words do not always have a single correct translation.
+Users can select up to three learning goals.
 
-LinguaFlow therefore aims to translate words and phrases **according to their context**, rather than relying solely on fixed dictionary mappings.
+Possible goals include:
 
-For example:
-
-```text
-我正在申请大学。
-→ I'm applying to a university.
-```
-
-while:
-
-```text
-提交申请。
-→ Submit an application.
-```
-
-The same source word can produce different target-language expressions depending on how it is being used.
-
-This makes the translation more natural and, more importantly, helps users learn **how words are actually used in real language**.
-
----
-
-## 4. Personalized Translation Style
-
-Different users have different language goals.
-
-LinguaFlow allows users to control the style of the language they want to encounter.
-
-Possible styles include:
-
-* Casual
-* Neutral
-* Professional
-* Formal
+* Everyday Communication
 * Academic
+* Professional
+* Business
+* Travel
+* Personal Growth
+* Other
 
-For example:
-
-```text
-Source:
-我觉得这个方法很好。
-```
-
-### Casual
-
-> I think this works really well.
-
-### Professional
-
-> I think this approach is highly effective.
-
-### Academic
-
-> This approach appears to be highly effective.
-
-Instead of learning only one fixed translation, users can gradually develop an understanding of different registers and ways of expressing the same idea.
+These preferences help determine which expressions and vocabulary should be prioritized.
 
 ---
 
-## 5. Translation Domain
+# 03 — Interests & Domains
 
-Language also changes according to context and profession.
+Users select the domains they want to encounter more frequently.
 
-LinguaFlow allows users to select a preferred domain, such as:
+Examples:
 
-* General
+* General / Everyday
 * Academic
 * Business
 * Technology
 * Finance
 * Science
+* Arts & Culture
 * Travel
+* Media & Entertainment
 * Law
 * Medicine
+* Social Sciences
 
-For example, a user learning English for business may receive terminology and expressions that are more relevant to professional communication.
-
-Combined with translation style, this creates a more personalized language environment:
-
-```text
-Domain:     Business
-Style:      Professional
-Language:   Chinese → English
-```
-
-The system can therefore adapt not only **what language** users see, but also **what kind of language** they see.
-
----
-
-## 6. Micro-Recall
-
-Seeing a word once is rarely enough to remember it.
-
-LinguaFlow introduces a lightweight **micro-recall** mechanism by showing how often a user has encountered a translation.
+Users can also enter custom interests.
 
 For example:
 
 ```text
-会议
-meeting · 12×
+AI
+fashion
+economics
+psychology
+startups
 ```
 
-The number indicates how many times the user has encountered the word.
-
-This transforms repetition into something visible without turning the experience into traditional flashcard-based learning.
-
-Instead of asking:
-
-> "Do you want to study this word?"
-
-LinguaFlow quietly tells the user:
-
-> "You've seen this word 12 times."
-
-Repeated exposure can gradually move vocabulary from unfamiliar → recognizable → familiar → usable.
-
-The objective is to make repetition happen naturally through everyday typing.
+This allows LinguaFlow to become increasingly relevant to the user's actual life and work.
 
 ---
 
-## 7. Hover Pronunciation
+# 04 — Language Level
 
-Language learning is not only visual.
-
-Users can optionally enable **Hover Pronunciation** in settings.
-
-When the cursor hovers over a translated word, LinguaFlow can provide pronunciation and audio.
-
-For example:
+Users select their current learning level:
 
 ```text
-postpone
-/pəˈspoʊn/
-🔊
+Beginner
+Elementary
+Intermediate
+Upper-Intermediate
+Advanced
+Fluent
 ```
 
-This feature is intentionally optional and on-demand.
+Language level can influence:
 
-LinguaFlow should not interrupt users with automatic audio or pop-ups. Pronunciation becomes available precisely when the user wants it.
+* Vocabulary difficulty
+* Alternative expressions
+* Example sentences
+* Explanation depth
+* Suggested synonyms
+* Learning intensity
 
 ---
 
-## 8. Vocabulary Cards
+# 05 — Translation Style
 
-For users who want to explore a word further, LinguaFlow provides an optional vocabulary card.
+Users can define how they want translations to sound.
 
-A vocabulary card can include:
+Available styles:
 
 ```text
+Casual
+Neutral
+Professional
+Formal
+Academic
+```
+
+For example, the same concept could be translated differently depending on the user's preference.
+
+```text
+Casual
+push back
+
+Neutral
 postpone
-/pəˈspoʊn/
 
-verb
+Formal
+defer
+```
 
-to delay something until a later time
+This transforms translation from a generic service into a **personalized language-learning environment**.
 
-Similar:
-delay · defer
+---
 
-Example:
-We had to postpone the meeting.
+# 06 — Learning Intensity
 
+Users can choose how visible the learning experience should be.
+
+### Minimal
+
+Keep the input experience clean.
+
+```text
+会议 → meeting
+```
+
+### Balanced
+
+Provide useful learning signals without distraction.
+
+```text
+会议 → meeting · 12×
+```
+
+### Immersive
+
+Actively surface:
+
+* Alternative expressions
+* Vocabulary information
+* Learning signals
+* Additional language exposure
+
+The default should be **Balanced**.
+
+---
+
+# 07 — Optional Learning Features
+
+Users can enable or disable individual learning tools.
+
+### Micro-Recall
+
+Shows how often a user has encountered a word.
+
+```text
 Seen 14 times
 ```
 
-This creates two levels of interaction:
+### Hover Pronunciation
 
-### Passive
+Hover over a translation to hear pronunciation.
 
-See the translation while typing.
+### Vocabulary Cards
 
-### Active
+Open a detailed learning card.
 
-Hover or click when you want to learn more.
+### Alternative Expressions
 
-This distinction is important to LinguaFlow's philosophy:
+Show useful alternatives when appropriate.
 
-> **Learning should always be available, but never forced.**
+### Collocations
+
+Show common word combinations.
+
+### Grammar Hints
+
+Provide occasional explanations of useful grammatical patterns.
+
+All of these features should remain optional so LinguaFlow does not become intrusive.
 
 ---
 
-# The LinguaFlow Learning Loop
+# 08 — Learning Priorities
 
-LinguaFlow is built around a simple learning loop:
+Users can select what they most want to improve.
+
+Possible priorities:
+
+* Vocabulary
+* Natural Expression
+* Academic / Professional Language
+* Pronunciation
+* Grammar
+* Confidence
+
+These priorities can influence the information surfaced by the translation engine and vocabulary cards.
+
+---
+
+# 09 — Learning Style
+
+Users can choose:
+
+### Keep It Subtle
+
+> I don't want to feel like I'm studying.
+
+### Make It Noticeable
+
+> I want regular language exposure while typing.
+
+### Challenge Me
+
+> I want LinguaFlow to actively introduce new vocabulary and expressions.
+
+---
+
+# Language Profile Summary
+
+After onboarding, LinguaFlow generates a personalized profile.
+
+Example:
 
 ```text
-                 TYPE
-                   ↓
-              SEE TRANSLATION
-                   ↓
-             CONTEXTUAL EXPOSURE
-                   ↓
-              REPEATED ENCOUNTER
-                   ↓
-               MICRO-RECALL
-                   ↓
-               RECOGNITION
-                   ↓
-              ACTIVE USAGE
-                   ↓
-                  TYPE
-                   ↺
+LANGUAGE
+🇨🇳 Chinese → 🇺🇸 English
+
+LEVEL
+Intermediate
+
+GOAL
+Academic · Professional
+
+DOMAIN
+Technology · Business
+
+STYLE
+Neutral · Professional
+
+INTENSITY
+Balanced
+
+PRIORITIES
+Vocabulary · Natural Expression
+
+ENABLED
+✓ Micro-Recall
+✓ Hover Pronunciation
+✓ Vocabulary Cards
 ```
 
-Traditional learning often separates **learning** and **using** a language.
-
-LinguaFlow attempts to bring them together.
-
-> **Use → Encounter → Recognize → Remember → Use again.**
-
-The keyboard becomes a continuous learning environment rather than a separate study environment.
+This profile becomes the foundation for personalized translation.
 
 ---
 
-# Personalization
+# Real-Time Candidate Translation
 
-LinguaFlow is designed to adapt to each user's learning preferences.
+This is the **core interaction of LinguaFlow**.
 
-Users can configure:
+Instead of requiring users to translate text after typing, translations appear directly inside the candidate interface.
 
-### Language
+Example:
+
+```text
+User input:
+
+会议
+```
+
+Candidate interface:
+
+```text
+┌─────────────────────────────────┐
+│  会议                            │
+│  meeting                         │
+│  conference                      │
+│  appointment                     │
+└─────────────────────────────────┘
+```
+
+The exact presentation can depend on:
+
+* Context
+* User's language pair
+* Translation style
+* Domain
+* Language level
+* Learning intensity
+* Previous exposure
+
+The system should prioritize the most useful translation rather than simply displaying every possible dictionary equivalent.
+
+---
+
+# Context-Aware Translation
+
+Context awareness is a key component of LinguaFlow.
+
+The same word can have different translations depending on context.
+
+For example:
+
+```text
+bank
+```
+
+could refer to:
+
+```text
+financial institution
+river bank
+```
+
+Similarly, the appropriate translation may change depending on the user's domain.
+
+A technology user might receive terminology optimized for:
+
+> Technology / Professional
+
+while another user might receive:
+
+> General / Casual
+
+The translation system therefore considers:
+
+```text
+Current Input
+      +
+Surrounding Context
+      +
+User Profile
+      +
+Domain
+      +
+Style
+      +
+Language Level
+      ↓
+Personalized Translation
+```
+
+---
+
+# Translation Style × Domain
+
+LinguaFlow separates **Style** and **Domain**.
+
+This is important because they represent different dimensions.
+
+### Style
+
+How the expression sounds.
+
+```text
+Casual
+Neutral
+Professional
+Formal
+Academic
+```
+
+### Domain
+
+Where the expression is used.
+
+```text
+Technology
+Business
+Finance
+Science
+Law
+Medicine
+...
+```
+
+For example:
+
+```text
+Domain:
+Technology
+
+Style:
+Professional
+```
+
+could produce a different translation from:
+
+```text
+Domain:
+Everyday
+
+Style:
+Casual
+```
+
+This allows much more precise personalization.
+
+---
+
+# Micro-Recall
+
+LinguaFlow does not require users to explicitly create flashcards.
+
+Instead, it records lightweight exposure information.
+
+For example:
+
+```text
+meeting
+Seen 14 times
+```
+
+The purpose is simple:
+
+> **Make repeated exposure visible.**
+
+A user may encounter a word naturally dozens of times without realizing it.
+
+Micro-Recall turns that repetition into a subtle learning signal.
+
+Potential states include:
+
+```text
+New
+Encountered
+Familiar
+Recognized
+Used
+Mastered
+```
+
+These should be treated as learning signals rather than definitive measurements of language proficiency.
+
+---
+
+# Vocabulary Cards
+
+When users want to explore a translation further, they can open a Vocabulary Card.
+
+The card is intentionally designed as a **micro-learning component**, rather than a traditional dictionary page.
+
+---
+
+## Card Layout
+
+```text
+┌──────────────────────────────────────────┐
+│                                          │
+│  postpone                         🔊     │
+│  /pəˈspoʊn/   ·   verb                   │
+│                                          │
+│  延期 / 推迟                              │
+│                                          │
+│  ──────────────────────────────────────  │
+│                                          │
+│  CONTEXT                                 │
+│  to delay something until a later time   │
+│                                          │
+│  ──────────────────────────────────────  │
+│                                          │
+│  EXAMPLE                                 │
+│  We had to postpone the meeting.         │
+│  我们不得不推迟会议。                      │
+│                                          │
+│  ──────────────────────────────────────  │
+│                                          │
+│  COLLOCATIONS                            │
+│  postpone a meeting · postpone a        │
+│  decision · postpone the event           │
+│                                          │
+│  ──────────────────────────────────────  │
+│                                          │
+│  SIMILAR                                 │
+│  delay  ·  defer                         │
+│                                          │
+│  ──────────────────────────────────────  │
+│                                          │
+│  STYLE            DOMAIN                 │
+│  Neutral          Business               │
+│                                          │
+│  ──────────────────────────────────────  │
+│                                          │
+│  ◉ Seen 14 times                         │
+│                                          │
+│                          More →          │
+│                                          │
+└──────────────────────────────────────────┘
+```
+
+---
+
+# Vocabulary Card Information Architecture
+
+```text
+HEADER
+Word + Pronunciation + Part of Speech + Audio
+        ↓
+TRANSLATION
+Current contextual translation
+        ↓
+CONTEXT / DEFINITION
+Meaning relevant to the current context
+        ↓
+EXAMPLE
+Example sentence + translation
+        ↓
+COLLOCATIONS
+Common word combinations
+        ↓
+SIMILAR WORDS
+Synonyms / nuanced differences
+        ↓
+STYLE + DOMAIN
+Language register / professional domain
+        ↓
+MICRO-RECALL
+Seen ×
+        ↓
+MORE
+Expanded information
+```
+
+---
+
+# Progressive Information
+
+Vocabulary Cards use three information layers.
+
+### Layer 1 — Instant
+
+Immediately available:
+
+```text
+postpone
+/pəˈspoʊn/ 🔊
+verb
+```
+
+### Layer 2 — Quick Learning
+
+When the user opens the card:
+
+```text
+Meaning
+Example
+Collocations
+Seen ×
+```
+
+### Layer 3 — Deep Learning
+
+Available through **More / Explore More**:
+
+```text
+Synonyms
+Register
+Domain
+Word family
+Pronunciation details
+Grammar
+Etymology
+Additional examples
+```
+
+This keeps the core interaction lightweight while allowing deeper exploration.
+
+---
+
+# Hover Pronunciation
+
+When enabled, users can hover over a translated word.
+
+Example:
+
+```text
+meeting  ← cursor
+   ↓
+🔊 /ˈmiːtɪŋ/
+```
+
+The goal is to connect:
+
+```text
+Visual recognition
+        +
+Sound
+        +
+Context
+```
+
+without requiring users to enter a separate pronunciation-learning environment.
+
+---
+
+# Personalization Architecture
+
+The personalization system can be represented as:
+
+```text
+                    USER PROFILE
+                         │
+       ┌─────────────────┼─────────────────┐
+       │                 │                 │
+    Language           Style            Domain
+       │                 │                 │
+       └─────────────────┼─────────────────┘
+                         │
+                    Learning Level
+                         │
+                    Learning Goal
+                         │
+                         ▼
+                TRANSLATION ENGINE
+                         ▲
+                         │
+                  CURRENT CONTEXT
+                         │
+                         ▼
+                PERSONALIZED OUTPUT
+                         │
+          ┌──────────────┼──────────────┐
+          ▼              ▼              ▼
+      Candidate        Hover          Card
+          │           Audio            │
+          │              │              │
+          └──────────────┼──────────────┘
+                         ▼
+                  LEARNING HISTORY
+                         │
+                         ▼
+                    MICRO-RECALL
+```
+
+---
+
+# Core User Flow
+
+The complete experience can be summarized as:
+
+```text
+ONBOARDING
+    ↓
+Create Language Profile
+    ↓
+Configure Goal / Domain / Style / Level
+    ↓
+────────────────────────────────
+    ↓
+EVERYDAY TYPING
+    ↓
+Type normally
+    ↓
+Real-time translations appear in candidates
+    ↓
+Natural exposure
+    ↓
+────────────────────────────────
+    ↓
+OPTIONAL INTERACTION
+    │
+    ├── Continue typing
+    │
+    ├── Hover → Pronunciation
+    │
+    └── Click → Vocabulary Card
+                    ↓
+              Explore meaning
+                    ↓
+              Examples / Usage
+                    ↓
+              Micro-Recall
+                    ↓
+              Repeated exposure
+```
+
+---
+
+# What Makes LinguaFlow Different?
+
+LinguaFlow sits at the intersection of:
+
+```text
+              INPUT
+                │
+                │
+                ▼
+         ┌──────────────┐
+         │  LinguaFlow  │
+         └──────────────┘
+           │          │
+           ▼          ▼
+      TRANSLATION   LEARNING
+           │          │
+           └────┬─────┘
+                ▼
+        EVERYDAY WORKFLOW
+```
+
+Traditional products usually focus on one of these:
+
+| Product Type             | Primary Function                             |
+| ------------------------ | -------------------------------------------- |
+| Traditional Input Method | Fast and accurate typing                     |
+| Translator               | Translate existing text                      |
+| Dictionary               | Explain individual words                     |
+| AI Writing Tool          | Generate / improve text                      |
+| Language Learning App    | Deliberate language study                    |
+| **LinguaFlow**           | **Language exposure during everyday typing** |
+
+The key difference is **where the translation happens**.
+
+A translator waits for the user to ask.
+
+LinguaFlow brings the translation **into the moment of input**.
+
+---
+
+# Product Scope
+
+LinguaFlow is designed as a **multilingual input method**, rather than a Chinese-only input method.
+
+The architecture should support multiple combinations of:
 
 ```text
 Input Language
+        ↕
 Learning Language
 ```
 
-### Translation
+Potential examples:
 
 ```text
-Translation Style
-Translation Domain
+Chinese → English
+Chinese → Japanese
+English → Chinese
+English → Spanish
+Japanese → English
+Korean → English
+...
 ```
 
-### Learning Intensity
-
-```text
-Minimal
-Balanced
-Immersive
-```
-
-### Optional Assistance
-
-```text
-Hover Pronunciation
-Vocabulary Cards
-Example Sentences
-```
-
-This allows users to decide how visible or subtle the learning layer should be.
-
-A user who wants almost no interruption can choose a minimal experience:
-
-```text
-会议
-meeting
-```
-
-A more advanced learner might choose:
-
-```text
-会议
-meeting · 18×
-
-conference
-```
-
-and explore the full vocabulary card only when needed.
+The system should not fundamentally depend on a single source language or target language.
 
 ---
 
-# Design Principles
+# Platform Strategy
 
-## 1. Learning Should Be Invisible
+LinguaFlow is intended to support desktop operating systems.
 
-LinguaFlow should not constantly remind users that they are studying.
+The initial implementation can focus on one platform while maintaining an architecture that can later support additional platforms.
 
-The ideal experience is:
+Potential targets include:
 
-> **You were just typing. You happened to learn something.**
+* macOS
+* Windows
+* Other desktop environments in the future
 
----
-
-## 2. Never Interrupt the Workflow
-
-Translation should appear where users are already looking.
-
-No unnecessary:
-
-* Pop-ups
-* Notifications
-* Forced quizzes
-* Study sessions
-* Context switching
-
-The input experience always comes first.
+The product concept itself is **platform-independent**.
 
 ---
 
-## 3. Passive First, Active When Needed
+# Product Architecture
 
-LinguaFlow has two layers:
+At a high level, LinguaFlow can be separated into several layers:
 
 ```text
-Passive Layer
-────────────────
-Translation
-Context
-Micro-recall
-Exposure
-
-
-Active Layer
-────────────────
-Pronunciation
-Vocabulary cards
-Definitions
-Examples
-Deeper exploration
+┌──────────────────────────────────────────┐
+│              USER INTERFACE              │
+│                                          │
+│ Candidate UI · Settings · Cards · Audio  │
+└────────────────────┬─────────────────────┘
+                     │
+┌────────────────────▼─────────────────────┐
+│             INPUT ENGINE                 │
+│                                          │
+│ Keyboard Input · Candidate Generation    │
+└────────────────────┬─────────────────────┘
+                     │
+┌────────────────────▼─────────────────────┐
+│          CONTEXT & TRANSLATION           │
+│                                          │
+│ Context Analysis · Translation · Style   │
+│ Domain Adaptation · Language Level       │
+└────────────────────┬─────────────────────┘
+                     │
+┌────────────────────▼─────────────────────┐
+│            LEARNING ENGINE               │
+│                                          │
+│ Vocabulary · Micro-Recall · History      │
+│ Pronunciation · Learning Signals         │
+└────────────────────┬─────────────────────┘
+                     │
+┌────────────────────▼─────────────────────┐
+│             USER PROFILE                │
+│                                          │
+│ Languages · Goals · Domains · Style      │
+│ Level · Intensity · Preferences          │
+└──────────────────────────────────────────┘
 ```
 
-Users can remain entirely within the passive layer or choose to explore further.
+---
+
+# MVP
+
+The first version should focus on the product's strongest differentiator rather than trying to build a complete language-learning platform.
+
+### MVP Core
+
+* Multilingual input
+* Real-time translation inside candidate interface
+* Configurable input / learning languages
+* Basic context-aware translation
+* Translation style selection
+* Domain selection
+* Basic Micro-Recall
+* Vocabulary Card
+* Hover pronunciation
+
+### Secondary Features
+
+* Alternative expressions
+* Collocations
+* Grammar hints
+* Multiple language profiles
+* Advanced learning history
+
+### Future Possibilities
+
+* Adaptive vocabulary difficulty
+* Personalized review
+* Spaced repetition
+* Learning analytics
+* Vocabulary goals
+* Cross-device synchronization
+* More advanced contextual models
+* Additional platforms
 
 ---
 
-## 4. Personalization Over One-Size-Fits-All
+# Privacy & Data
 
-There is no single "correct" way to learn a language.
+Because LinguaFlow operates at the input-method level, privacy is a fundamental product consideration.
 
-Users should be able to decide:
+The system may process highly sensitive user input depending on the application being used.
 
-* What language they want to learn
-* What level they want to encounter
-* What domains matter to them
-* How formal or casual the language should be
-* How much information they want to see
+Therefore, privacy should be treated as a core architectural principle rather than an afterthought.
 
----
+Potential principles include:
 
-# Beyond Translation
+* Minimize stored input data
+* Process locally whenever practical
+* Avoid storing raw keystrokes unnecessarily
+* Separate learning metadata from sensitive input
+* Give users clear control over learning history
+* Make cloud-based processing transparent
+* Allow users to disable learning features
 
-Translation is only the entry point.
-
-Over time, LinguaFlow can evolve from a translation-enabled input method into a **personal language learning layer**.
-
-Potential future capabilities include:
-
-* Personal vocabulary history
-* Vocabulary mastery estimation
-* Smart review
-* Collocation learning
-* Natural expression suggestions
-* Grammar micro-hints
-* Domain-specific vocabulary
-* Multiple simultaneous learning languages
-* Personalized learning analytics
-* AI-powered explanations and rewriting
-
-AI can enhance these experiences, but it is not the foundation of LinguaFlow.
-
-The core value remains:
-
-> **Making language learning happen naturally through everyday input.**
+A production implementation should clearly define what data is processed locally, what is sent to external services, and what is stored.
 
 ---
 
-# Product Vision
+# Development Philosophy
 
-LinguaFlow is built on a simple idea:
+LinguaFlow should not attempt to become:
 
-> **You shouldn't always have to stop your life to learn a language.**
+> "Another AI keyboard."
 
-People already spend hours every day typing messages, emails, documents, searches, and notes.
+AI-powered prediction and generation can be useful supplementary features, but they are not the core product thesis.
 
-Instead of asking users to create more time for language learning, LinguaFlow turns a small part of that existing activity into continuous language exposure.
+The central question is:
 
-### Type.
+> **How can everyday typing become a continuous source of language exposure?**
 
-### See.
+Every new feature should be evaluated against that principle.
 
-### Remember.
+If a feature makes the user more productive **and** creates meaningful language exposure, it strengthens LinguaFlow.
 
-### Learn.
-
-**Without stopping.**
+If it adds AI functionality without improving the learning experience, it should remain secondary.
 
 ---
 
 # Roadmap
 
-## Phase 1 — Core Experience
+### Phase 1 — Foundation
 
-* [ ] Multilingual input
-* [ ] Real-time translation in input candidates
-* [ ] Language pair selection
+* [ ] Define language architecture
+* [ ] Build input engine prototype
+* [ ] Implement candidate translation
+* [ ] Create basic language profile
+* [ ] Build candidate UI
+
+### Phase 2 — Learning Layer
+
 * [ ] Context-aware translation
 * [ ] Translation style
-* [ ] Translation domain
-
-## Phase 2 — Learning Layer
-
-* [ ] Micro-recall / encounter count
-* [ ] Personal vocabulary history
+* [ ] Domain personalization
+* [ ] Micro-Recall
+* [ ] Vocabulary Cards
 * [ ] Hover pronunciation
-* [ ] Vocabulary cards
-* [ ] Definitions and examples
-* [ ] Synonyms and related expressions
 
-## Phase 3 — Personalization
+### Phase 3 — Personalization
 
-* [ ] Vocabulary mastery
-* [ ] Smart review
-* [ ] Learning intensity
-* [ ] Personalized difficulty
-* [ ] Multiple learning languages
-* [ ] Learning analytics
+* [ ] Learning level adaptation
+* [ ] Adaptive vocabulary
+* [ ] Alternative expressions
+* [ ] Collocations
+* [ ] Grammar hints
+* [ ] Multiple language profiles
 
-## Phase 4 — Intelligent Language Assistance
+### Phase 4 — Productization
 
-* [ ] Natural expression suggestions
-* [ ] Grammar micro-hints
-* [ ] AI explanations
-* [ ] AI rewriting
-* [ ] Personalized language coaching
+* [ ] User-friendly installation
+* [ ] Account system
+* [ ] Cloud synchronization
+* [ ] Subscription / commercialization infrastructure
+* [ ] Cross-platform support
+* [ ] Privacy controls
 
 ---
 
-# Project Status
+# Long-Term Vision
 
-LinguaFlow is currently under active development.
+LinguaFlow aims to change the relationship between **productivity tools and language learning**.
 
-The initial focus is on building a reliable, low-friction input experience and validating the core idea of **passive language learning through real-time candidate translation**.
+Today, users generally have to choose:
 
-The project is designed to support multiple platforms and languages as development progresses.
+```text
+Work
+     OR
+Study
+```
 
----
+LinguaFlow proposes:
 
-# Philosophy
+```text
+Work
+  +
+Everyday Typing
+  +
+Natural Language Exposure
+  =
+Continuous Learning
+```
 
-> **Translation where you type.
-> Learning while you live.**
+The ultimate goal is not to make users spend more time studying.
 
-LinguaFlow is not designed to replace language-learning applications.
+It is to make them **learn more from the time they already spend typing**.
 
-It is designed to make the world around you a little more educational.
+> **LinguaFlow — Type naturally. Learn effortlessly.**
+> """
+> from pathlib import Path
+> p = Path("/mnt/data/README.md")
+> p.write_text(content, encoding="utf-8")
+> print(p)
