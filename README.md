@@ -259,6 +259,49 @@ Users can switch between profiles depending on their needs.
 
 ---
 
+# Native macOS Input Method MVP
+
+The first working milestone is now a real macOS input source, not a fixed
+translation window. It is listed beside Apple's input sources and receives
+keystrokes only while the user has selected LinguaFlow from the input menu.
+The MVP contains five offline pinyin groups (`huiyi`, `anpai`, `yanqi`,
+`shenqing`, and `fangfa`). Its candidate panel follows the active text caret
+and shows Chinese, English translation, and Seen count. Seen is incremented
+only after a candidate is committed with Return, Space, 1/2/3, or a mouse click.
+
+## Open and run
+
+Open `LinguaFlowPrototype.xcodeproj` in Xcode. The `LinguaFlowPrototype` scheme
+builds the `LinguaFlow Setup` app and embeds the signed `LinguaFlow.app`
+input-method bundle. The `LinguaFlowInputMethod` scheme builds the input source
+by itself; it is a background app and is not intended to show a window.
+
+The project-local script is the recommended path because it selects the
+installed Xcode toolchain without changing `xcode-select`:
+
+```bash
+./script/build_and_run.sh
+./script/build_and_run.sh --test
+./script/build_and_run.sh --build-ime
+./script/build_and_run.sh --install-ime
+./script/build_and_run.sh --verify-ime
+./script/build_and_run.sh --verify
+```
+
+`--install-ime` installs to `~/Library/Input Methods/LinguaFlow.app`. Open the
+Setup app, click “安装输入法”, then go to **System Settings → Keyboard → Text
+Input → Edit** and add LinguaFlow. No administrator password or sensitive
+privacy permission is required. Local development signing uses the first
+available Apple Development identity; Developer ID signing, DMG packaging,
+notarization, and a complete pinyin engine are later milestones.
+
+Learning counts are shared by the Setup app and the input method at:
+`~/Library/Application Support/LinguaFlow/exposureCounts.v1.json`. The file
+contains only stable candidate IDs and integer counts; no input history,
+sentences, application names, or timestamps are stored.
+
+---
+
 # 02 — Learning Goals
 
 Users can select up to three learning goals.

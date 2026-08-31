@@ -1,5 +1,5 @@
+import LinguaFlowCore
 import XCTest
-@testable import LinguaFlowPrototype
 
 final class CandidateCatalogTests: XCTestCase {
     func testEverySupportedInputReturnsThreeCandidates() {
@@ -10,7 +10,6 @@ final class CandidateCatalogTests: XCTestCase {
 
     func testInputIsNormalized() {
         let candidates = CandidateCatalog.candidates(for: "  HUIYI\n")
-
         XCTAssertEqual(candidates.map(\.sourceText), ["会议", "回忆", "会意"])
     }
 
@@ -20,15 +19,11 @@ final class CandidateCatalogTests: XCTestCase {
         XCTAssertTrue(CandidateCatalog.candidates(for: "hello").isEmpty)
     }
 
-    func testPrimaryCandidateMatchesReturnKeySelection() {
-        XCTAssertEqual(
-            CandidateCatalog.primaryCandidate(for: " HUIYI ")?.id,
-            "huiyi.meeting"
-        )
-        XCTAssertEqual(
-            CandidateCatalog.primaryCandidate(for: "anpai")?.sourceText,
-            "安排"
-        )
-        XCTAssertNil(CandidateCatalog.primaryCandidate(for: "hello"))
+    func testStableCandidateIdentifiersArePreserved() {
+        XCTAssertEqual(CandidateCatalog.primaryCandidate(for: "huiyi")?.id, "huiyi.meeting")
+        XCTAssertEqual(CandidateCatalog.primaryCandidate(for: "anpai")?.id, "anpai.arrange")
+        XCTAssertEqual(CandidateCatalog.primaryCandidate(for: "yanqi")?.id, "yanqi.postpone")
+        XCTAssertEqual(CandidateCatalog.primaryCandidate(for: "shenqing")?.id, "shenqing.apply")
+        XCTAssertEqual(CandidateCatalog.primaryCandidate(for: "fangfa")?.id, "fangfa.method")
     }
 }

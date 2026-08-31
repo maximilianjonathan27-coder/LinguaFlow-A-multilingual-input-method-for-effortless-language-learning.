@@ -1,7 +1,7 @@
 import Foundation
 
-enum CandidateCatalog {
-    static let supportedInputs = ["huiyi", "anpai", "yanqi", "shenqing", "fangfa"]
+public enum CandidateCatalog {
+    public static let supportedInputs = ["huiyi", "anpai", "yanqi", "shenqing", "fangfa"]
 
     private static let candidatesByInput: [String: [Candidate]] = [
         "huiyi": [
@@ -31,15 +31,15 @@ enum CandidateCatalog {
         ],
     ]
 
-    static func normalizedInput(_ input: String) -> String {
+    public static func normalizedInput(_ input: String) -> String {
         input.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
     }
 
-    static func candidates(for input: String) -> [Candidate] {
+    public static func candidates(for input: String) -> [Candidate] {
         candidatesByInput[normalizedInput(input)] ?? []
     }
 
-    static func primaryCandidate(for input: String) -> Candidate? {
+    public static func primaryCandidate(for input: String) -> Candidate? {
         candidates(for: input).first
     }
 }

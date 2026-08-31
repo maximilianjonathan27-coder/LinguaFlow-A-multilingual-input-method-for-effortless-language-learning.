@@ -1,68 +1,42 @@
+import LinguaFlowCore
 import SwiftUI
 
 struct ContentView: View {
     let exposureStore: ExposureStore
 
-    @State private var query = ""
-    @State private var submittedCandidate: Candidate?
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var installer = InputMethodInstaller()
     @State private var isShowingResetConfirmation = false
 
-    private var normalizedQuery: String {
-        CandidateCatalog.normalizedInput(query)
-    }
-
-    private var candidates: [Candidate] {
-        CandidateCatalog.candidates(for: query)
+    private var totalSeenCount: Int {
+        exposureStore.counts.values.reduce(0, +)
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
             header
-
-            InputSection(
-                query: $query,
-                submittedCandidate: submittedCandidate,
-                onSubmit: submitPrimaryCandidate
-            )
-            .onChange(of: normalizedQuery) { _, newValue in
-                if newValue != submittedCandidate?.pinyin {
-                    submittedCandidate = nil
-                }
-            }
-
-            Group {
-                if normalizedQuery.isEmpty {
-                    CandidateStateView(
-                        symbol: "keyboard",
-                        title: "开始输入拼音",
-                        message: "翻译会显示在模拟候选词旁，但不会写入输入框。"
-                    )
-                } else if candidates.isEmpty {
-                    CandidateStateView(
-                        symbol: "questionmark.circle",
-                        title: "暂未收录，请尝试支持的五个拼音",
-                        message: "请尝试 huiyi、anpai、yanqi、shenqing 或 fangfa。"
-                    )
-                } else {
-                    CandidateListView(candidates: candidates, exposureStore: exposureStore)
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-            footer
+            installationCard
+            learningCard
+            privacyNote
         }
         .padding(32)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .onChange(of: scenePhase) { _, newPhase in
+            guard newPhase == .active else { return }
+            installer.refreshStatus()
+            exposureStore.refresh()
+        }
         .confirmationDialog(
             "确定要清空全部学习记录吗？",
             isPresented: $isShowingResetConfirmation,
             titleVisibility: .visible
         ) {
             Button("清空学习记录", role: .destructive) {
-                exposureStore.reset()
+                _ = exposureStore.reset()
             }
             Button("取消", role: .cancel) {}
         } message: {
-            Text("所有 Seen count 都会归零，这个操作无法撤销。")
+            Text("所有候选词的 Seen count 都会归零，这个操作无法撤销。")
         }
     }
 
@@ -75,17 +49,81 @@ struct ContentView: View {
                 .font(.title3.weight(.medium))
                 .foregroundStyle(.secondary)
 
-            Text("输入拼音，在候选词旁顺便看到英文。")
-                .font(.body)
+            Text("安装 LinguaFlow 输入法，让双语候选跟随你在任何 App 中的光标。")
                 .foregroundStyle(.secondary)
         }
     }
 
-    private var footer: some View {
-        HStack {
-            Label("仅在本机运行 · 不使用网络或 AI", systemImage: "lock.shield")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
+    private var installationCard: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            HStack(alignment: .top, spacing: 14) {
+                Image(systemName: statusSymbol)
+                    .font(.system(size: 26, weight: .semibold))
+                    .foregroundStyle(statusColor)
+                    .frame(width: 34)
+
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(statusTitle)
+                        .font(.title3.weight(.semibold))
+                    Text(statusMessage)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+
+            HStack(spacing: 12) {
+                Button(installButtonTitle) {
+                    installer.installOrUpdate()
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+                .disabled(installer.status == .installing || installer.status == .embeddedInputMethodMissing)
+
+                Button("打开键盘设置") {
+                    installer.openKeyboardSettings()
+                }
+                .controlSize(.large)
+
+                Spacer()
+
+                Text("当前用户安装")
+                    .font(.footnote)
+                    .foregroundStyle(.tertiary)
+            }
+
+            Divider()
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text("启用步骤")
+                    .font(.headline)
+                Text("系统设置 → 键盘 → 文本输入 → 编辑 → 添加 LinguaFlow")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+            }
+        }
+        .padding(22)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(Color.primary.opacity(0.10), lineWidth: 1)
+        }
+    }
+
+    private var learningCard: some View {
+        HStack(spacing: 16) {
+            Image(systemName: "character.book.closed")
+                .font(.system(size: 22, weight: .medium))
+                .foregroundStyle(.tint)
+                .frame(width: 34)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text("本机学习记录")
+                    .font(.headline)
+                Text("累计 Seen \(totalSeenCount) 次 · 只记录候选 ID 和次数")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
 
             Spacer()
 
@@ -94,14 +132,70 @@ struct ContentView: View {
             }
             .disabled(!exposureStore.hasExposures)
         }
+        .padding(18)
+        .background(Color.primary.opacity(0.035), in: RoundedRectangle(cornerRadius: 14))
     }
 
-    private func submitPrimaryCandidate() {
-        guard let candidate = CandidateCatalog.primaryCandidate(for: query) else {
-            return
-        }
+    private var privacyNote: some View {
+        Label(
+            "完全离线 · 不使用网络或 AI · 不保存输入历史 · 不申请辅助功能或输入监控权限",
+            systemImage: "lock.shield"
+        )
+        .font(.footnote)
+        .foregroundStyle(.secondary)
+    }
 
-        exposureStore.increment(candidate)
-        submittedCandidate = candidate
+    private var statusTitle: String {
+        switch installer.status {
+        case .notInstalled: "输入法尚未安装"
+        case .installed: "输入法已安装"
+        case .updateAvailable: "发现可安装的更新"
+        case .embeddedInputMethodMissing: "安装组件缺失"
+        case .installing: "正在安装…"
+        case .failed: "安装未完成"
+        }
+    }
+
+    private var statusMessage: String {
+        switch installer.status {
+        case .notInstalled:
+            "点击安装后，再到系统键盘设置中手动添加 LinguaFlow。"
+        case .installed:
+            "LinguaFlow 已位于你的 Input Methods 文件夹，可以在输入法菜单中启用。"
+        case .updateAvailable:
+            "点击更新会替换当前用户目录中的旧版本，不需要管理员密码。"
+        case .embeddedInputMethodMissing:
+            "当前 App 没有包含 LinguaFlow 输入法，请通过工程脚本重新构建。"
+        case .installing:
+            "正在复制并向 macOS 注册输入源。"
+        case let .failed(message):
+            message
+        }
+    }
+
+    private var statusSymbol: String {
+        switch installer.status {
+        case .installed: "checkmark.circle.fill"
+        case .installing: "arrow.triangle.2.circlepath"
+        case .failed, .embeddedInputMethodMissing: "exclamationmark.triangle.fill"
+        case .notInstalled, .updateAvailable: "keyboard.badge.ellipsis"
+        }
+    }
+
+    private var statusColor: Color {
+        switch installer.status {
+        case .installed: .green
+        case .failed, .embeddedInputMethodMissing: .orange
+        default: .accentColor
+        }
+    }
+
+    private var installButtonTitle: String {
+        switch installer.status {
+        case .installed: "重新安装"
+        case .updateAvailable: "更新输入法"
+        case .installing: "正在安装…"
+        default: "安装输入法"
+        }
     }
 }
