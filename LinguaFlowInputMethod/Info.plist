@@ -20,18 +20,26 @@
     <string>$(MARKETING_VERSION)</string>
     <key>CFBundleVersion</key>
     <string>$(CURRENT_PROJECT_VERSION)</string>
+    <key>TISInputSourceID</key>
+    <string>com.tianxq.inputmethod.LinguaFlow</string>
+    <key>TISIntendedLanguage</key>
+    <string>zh-Hans</string>
     <key>ComponentInputModeDict</key>
     <dict>
         <key>tsInputModeListKey</key>
         <dict>
-            <key>com.tianxq.LinguaFlow.inputmethod.pinyin</key>
+            <key>com.tianxq.inputmethod.LinguaFlow.pinyin</key>
             <dict>
+                <key>TISInputSourceID</key>
+                <string>com.tianxq.inputmethod.LinguaFlow.pinyin</string>
+                <key>TISIntendedLanguage</key>
+                <string>zh-Hans</string>
                 <key>tsInputModeDefaultStateKey</key>
                 <true/>
                 <key>tsInputModeIsVisibleKey</key>
                 <true/>
                 <key>tsInputModeMenuIconFileKey</key>
-                <string>LinguaFlowInputIcon.svg</string>
+                <string>LinguaFlowInputIcon.tiff</string>
                 <key>tsInputModePrimaryInScriptKey</key>
                 <true/>
                 <key>tsInputModeScriptKey</key>
@@ -40,11 +48,11 @@
         </dict>
         <key>tsVisibleInputModeOrderedArrayKey</key>
         <array>
-            <string>com.tianxq.LinguaFlow.inputmethod.pinyin</string>
+            <string>com.tianxq.inputmethod.LinguaFlow.pinyin</string>
         </array>
     </dict>
     <key>InputMethodConnectionName</key>
-    <string>LinguaFlow_InputMethod_Connection</string>
+    <string>com.tianxq.inputmethod.LinguaFlow_Connection</string>
     <key>InputMethodServerControllerClass</key>
     <string>LinguaFlowInputController</string>
     <key>LSApplicationCategoryType</key>
@@ -61,6 +69,6 @@
         <string>Hans</string>
     </array>
     <key>tsInputMethodIconFileKey</key>
-    <string>LinguaFlowInputIcon.svg</string>
+    <string>LinguaFlowInputIcon.tiff</string>
 </dict>
 </plist>

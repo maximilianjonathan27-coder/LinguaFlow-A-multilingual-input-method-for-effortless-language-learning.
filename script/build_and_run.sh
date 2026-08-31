@@ -5,7 +5,7 @@ MODE="${1:-run}"
 APP_NAME="LinguaFlowPrototype"
 IME_NAME="LinguaFlow"
 BUNDLE_ID="com.tianxq.LinguaFlowPrototype"
-IME_BUNDLE_ID="com.tianxq.LinguaFlow.inputmethod"
+IME_BUNDLE_ID="com.tianxq.inputmethod.LinguaFlow"
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PROJECT_PATH="$ROOT_DIR/LinguaFlowPrototype.xcodeproj"
@@ -102,6 +102,7 @@ install_ime_from_build() {
   local lsregister
   lsregister="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
   "$lsregister" -f -R -trusted "$INSTALLED_IME" >/dev/null 2>&1 || true
+  xcrun swift "$ROOT_DIR/script/register_input_source.swift" "$INSTALLED_IME"
   echo "Installed: $INSTALLED_IME"
   echo "Next: System Settings → Keyboard → Text Input → Edit → add LinguaFlow."
 }
@@ -115,6 +116,7 @@ verify_ime() {
 
   if [[ -d "$INSTALLED_IME" ]]; then
     echo "Installed bundle: $INSTALLED_IME"
+    xcrun swift "$ROOT_DIR/script/register_input_source.swift" --verify "$IME_BUNDLE_ID"
   else
     echo "Not installed yet: $INSTALLED_IME"
   fi

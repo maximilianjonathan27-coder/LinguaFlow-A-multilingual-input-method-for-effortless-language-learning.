@@ -15,9 +15,12 @@ final class InputMethodInstaller {
         case failed(String)
     }
 
-    static let inputMethodBundleIdentifier = "com.tianxq.LinguaFlow.inputmethod"
+    static let inputMethodBundleIdentifier = "com.tianxq.inputmethod.LinguaFlow"
+    static let inputModeIdentifier = "com.tianxq.inputmethod.LinguaFlow.pinyin"
 
     private(set) var status: Status = .notInstalled
+    private(set) var isInputMethodEnabled = false
+    private(set) var enableErrorMessage: String?
 
     private let fileManager: FileManager
 
@@ -37,6 +40,14 @@ final class InputMethodInstaller {
     }
 
     func refreshStatus() {
+        let parentEnabled = inputSource(identifier: Self.inputMethodBundleIdentifier).map {
+            booleanProperty(kTISPropertyInputSourceIsEnabled, from: $0)
+        } ?? false
+        let modeEnabled = inputSource(identifier: Self.inputModeIdentifier).map {
+            booleanProperty(kTISPropertyInputSourceIsEnabled, from: $0)
+        } ?? false
+        isInputMethodEnabled = parentEnabled && modeEnabled
+
         guard let embeddedURL, validInputMethod(at: embeddedURL) else {
             status = .embeddedInputMethodMissing
             return
@@ -116,6 +127,35 @@ final class InputMethodInstaller {
         NSWorkspace.shared.open(url)
     }
 
+    func enableInputMethod() {
+        enableErrorMessage = nil
+
+        guard fileManager.fileExists(atPath: installedURL.path) else {
+            enableErrorMessage = "请先安装 LinguaFlow 输入法。"
+            return
+        }
+
+        guard let parentSource = inputSource(identifier: Self.inputMethodBundleIdentifier),
+              let modeSource = inputSource(identifier: Self.inputModeIdentifier) else {
+            enableErrorMessage = "macOS 尚未识别 LinguaFlow，请重新安装后再试。"
+            return
+        }
+
+        let parentResult = TISEnableInputSource(parentSource)
+        guard parentResult == noErr else {
+            enableErrorMessage = "macOS 无法启用 LinguaFlow（错误码 \(parentResult)）。"
+            return
+        }
+
+        let modeResult = TISEnableInputSource(modeSource)
+        guard modeResult == noErr else {
+            enableErrorMessage = "macOS 无法启用 LinguaFlow 拼音模式（错误码 \(modeResult)）。"
+            return
+        }
+
+        refreshStatus()
+    }
+
     private func validInputMethod(at url: URL) -> Bool {
         guard let bundle = Bundle(url: url) else { return false }
         return bundle.bundleIdentifier == Self.inputMethodBundleIdentifier
@@ -131,6 +171,26 @@ final class InputMethodInstaller {
         ) {
             application.terminate()
         }
+    }
+
+    private func inputSource(identifier: String) -> TISInputSource? {
+        let filter = [
+            kTISPropertyInputSourceID as String: identifier
+        ] as CFDictionary
+        let sources = TISCreateInputSourceList(filter, true).takeRetainedValue()
+        guard CFArrayGetCount(sources) > 0,
+              let pointer = CFArrayGetValueAtIndex(sources, 0) else {
+            return nil
+        }
+        return Unmanaged<TISInputSource>.fromOpaque(pointer).takeUnretainedValue()
+    }
+
+    private func booleanProperty(_ key: CFString, from source: TISInputSource) -> Bool {
+        guard let pointer = TISGetInputSourceProperty(source, key) else {
+            return false
+        }
+        return (Unmanaged<AnyObject>.fromOpaque(pointer).takeUnretainedValue() as? NSNumber)?.boolValue
+            ?? false
     }
 
     private func removeIfPresent(_ url: URL) throws {

@@ -3,7 +3,7 @@ import InputMethodKit
 
 private let connectionName = Bundle.main.object(
     forInfoDictionaryKey: "InputMethodConnectionName"
-) as? String ?? "LinguaFlow_InputMethod_Connection"
+) as? String ?? "com.tianxq.inputmethod.LinguaFlow_Connection"
 
 private let server = IMKServer(
     name: connectionName,

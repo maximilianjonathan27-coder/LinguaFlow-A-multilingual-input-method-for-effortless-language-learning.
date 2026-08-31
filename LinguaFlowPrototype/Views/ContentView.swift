@@ -79,6 +79,15 @@ struct ContentView: View {
                 .controlSize(.large)
                 .disabled(installer.status == .installing || installer.status == .embeddedInputMethodMissing)
 
+                Button(installer.isInputMethodEnabled ? "已经启用" : "启用 LinguaFlow") {
+                    installer.enableInputMethod()
+                }
+                .controlSize(.large)
+                .disabled(
+                    installer.isInputMethodEnabled
+                        || installer.status != .installed
+                )
+
                 Button("打开键盘设置") {
                     installer.openKeyboardSettings()
                 }
@@ -96,10 +105,16 @@ struct ContentView: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text("启用步骤")
                     .font(.headline)
-                Text("系统设置 → 键盘 → 文本输入 → 编辑 → 添加 LinguaFlow")
+                Text("先点击“启用 LinguaFlow”，然后从菜单栏输入法图标切换到 LinguaFlow。")
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .textSelection(.enabled)
+
+                if let enableErrorMessage = installer.enableErrorMessage {
+                    Text(enableErrorMessage)
+                        .font(.callout)
+                        .foregroundStyle(.orange)
+                }
             }
         }
         .padding(22)
@@ -161,7 +176,9 @@ struct ContentView: View {
         case .notInstalled:
             "点击安装后，再到系统键盘设置中手动添加 LinguaFlow。"
         case .installed:
-            "LinguaFlow 已位于你的 Input Methods 文件夹，可以在输入法菜单中启用。"
+            installer.isInputMethodEnabled
+                ? "LinguaFlow 已安装并启用，可以从菜单栏输入法图标切换使用。"
+                : "LinguaFlow 已安装。点击“启用 LinguaFlow”完成系统集成测试；不会自动替换当前输入法。"
         case .updateAvailable:
             "点击更新会替换当前用户目录中的旧版本，不需要管理员密码。"
         case .embeddedInputMethodMissing:
