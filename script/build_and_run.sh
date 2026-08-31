@@ -49,15 +49,27 @@ xcodebuild_common() {
 }
 
 build_app() {
+  build_lexicon
   xcodebuild_common -scheme "$APP_NAME" build
 }
 
 build_ime() {
+  build_lexicon
   xcodebuild_common -scheme LinguaFlowInputMethod build
 }
 
 test_app() {
+  build_lexicon
   xcodebuild_common -scheme "$APP_NAME" test
+}
+
+build_lexicon() {
+  mkdir -p "$DERIVED_DATA/ModuleCache"
+  CLANG_MODULE_CACHE_PATH="$DERIVED_DATA/ModuleCache" \
+    SWIFT_MODULECACHE_PATH="$DERIVED_DATA/ModuleCache" \
+    xcrun swift "$ROOT_DIR/script/build_lexicon.swift" \
+      "$ROOT_DIR/LexiconSource" \
+      "$ROOT_DIR/LinguaFlowInputMethod/Resources/linguaflow.sqlite"
 }
 
 open_setup_app() {
@@ -145,6 +157,9 @@ case "$MODE" in
     build_ime
     verify_ime
     ;;
+  --build-lexicon|build-lexicon)
+    build_lexicon
+    ;;
   --verify|verify)
     stop_processes
     build_app
@@ -169,7 +184,7 @@ case "$MODE" in
     /usr/bin/log stream --info --style compact --predicate "subsystem == \"$BUNDLE_ID\""
     ;;
   *)
-    echo "usage: $0 [run|--test|--build-ime|--install-ime|--verify-ime|--verify|--debug|--logs|--telemetry]" >&2
+    echo "usage: $0 [run|--test|--build-lexicon|--build-ime|--install-ime|--verify-ime|--verify|--debug|--logs|--telemetry]" >&2
     exit 2
     ;;
 esac

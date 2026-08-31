@@ -54,9 +54,16 @@ public final class ExposureStore {
 
     @discardableResult
     public func increment(_ candidate: Candidate) -> Bool {
+        increment([candidate])
+    }
+
+    @discardableResult
+    public func increment(_ candidates: [Candidate]) -> Bool {
         do {
             counts = try persistence.update { latest in
-                latest[candidate.id, default: 0] += 1
+                for candidate in candidates {
+                    latest[candidate.id, default: 0] += 1
+                }
             }
             lastErrorDescription = nil
             return true

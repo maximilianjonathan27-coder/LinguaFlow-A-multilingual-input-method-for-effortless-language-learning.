@@ -41,11 +41,30 @@ public struct CompositionStateMachine: Sendable {
 
     public private(set) var buffer = ""
     public private(set) var selectedIndex = 0
+    private let lexicon: any LexiconRepository
+    private let targetLanguage: String
+    private var selectionCounts: [String: Int]
 
-    public init() {}
+    public init(
+        lexicon: any LexiconRepository = CandidateCatalog.repository,
+        targetLanguage: String = "en",
+        selectionCounts: [String: Int] = [:]
+    ) {
+        self.lexicon = lexicon
+        self.targetLanguage = targetLanguage
+        self.selectionCounts = selectionCounts
+    }
 
     public var candidates: [Candidate] {
-        CandidateCatalog.candidates(for: buffer)
+        CandidateRanker.rank(
+            lexicon.candidates(for: buffer, targetLanguage: targetLanguage, limit: 50),
+            for: buffer,
+            selectionCounts: selectionCounts
+        ).prefix(9).map { $0 }
+    }
+
+    public mutating func updateSelectionCounts(_ counts: [String: Int]) {
+        selectionCounts = counts
     }
 
     public mutating func handle(_ action: Action) -> Transition {

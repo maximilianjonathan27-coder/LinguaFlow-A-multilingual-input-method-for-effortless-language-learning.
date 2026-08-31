@@ -264,10 +264,12 @@ Users can switch between profiles depending on their needs.
 The first working milestone is now a real macOS input source, not a fixed
 translation window. It is listed beside Apple's input sources and receives
 keystrokes only while the user has selected LinguaFlow from the input menu.
-The MVP contains five offline pinyin groups (`huiyi`, `anpai`, `yanqi`,
-`shenqing`, and `fangfa`). Its candidate panel follows the active text caret
-and shows Chinese, English translation, and Seen count. Seen is incremented
-only after a candidate is committed with Return, Space, 1/2/3, or a mouse click.
+The MVP contains an extensible offline SQLite lexicon seeded with five pinyin
+groups (`huiyi`, `anpai`, `yanqi`, `shenqing`, and `fangfa`). Its candidate
+panel follows the active text caret and shows Chinese, English translation,
+and Seen count. Seen records candidate exposure. Actual commits are stored
+separately as selection counts and influence ranking without replacing system
+frequency.
 
 ## Open and run
 
@@ -282,6 +284,7 @@ installed Xcode toolchain without changing `xcode-select`:
 ```bash
 ./script/build_and_run.sh
 ./script/build_and_run.sh --test
+./script/build_and_run.sh --build-lexicon
 ./script/build_and_run.sh --build-ime
 ./script/build_and_run.sh --install-ime
 ./script/build_and_run.sh --verify-ime
@@ -295,10 +298,17 @@ privacy permission is required. Local development signing uses the first
 available Apple Development identity; Developer ID signing, DMG packaging,
 notarization, and a complete pinyin engine are later milestones.
 
+The editable source of the built-in dictionary lives in `LexiconSource/*.tsv`.
+`script/build_lexicon.swift` compiles those files into the read-only
+`LinguaFlow.app/Contents/Resources/linguaflow.sqlite`; do not edit the database
+binary by hand.
+
 Learning counts are shared by the Setup app and the input method at:
 `~/Library/Application Support/LinguaFlow/exposureCounts.v1.json`. The file
 contains only stable candidate IDs and integer counts; no input history,
 sentences, application names, or timestamps are stored.
+Actual selection counts use the same privacy model in
+`selectionCounts.v1.json`.
 
 ---
 

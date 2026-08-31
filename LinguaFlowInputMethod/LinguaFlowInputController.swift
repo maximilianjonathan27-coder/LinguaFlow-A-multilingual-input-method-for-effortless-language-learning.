@@ -5,8 +5,10 @@ import LinguaFlowCore
 @objc(LinguaFlowInputController)
 @MainActor
 final class LinguaFlowInputController: IMKInputController {
-    private var stateMachine = CompositionStateMachine()
+    private var stateMachine: CompositionStateMachine
     private lazy var exposureStore = ExposureStore()
+    private lazy var selectionStore = SelectionStore()
+    private var lastExposedCandidateIDs: [String] = []
     private lazy var candidatePanel: CandidatePanelController = {
         let controller = CandidatePanelController()
         controller.onSelect = { [weak self] index in
@@ -16,6 +18,12 @@ final class LinguaFlowInputController: IMKInputController {
     }()
 
     override init!(server: IMKServer!, delegate: Any!, client inputClient: Any!) {
+        if let databaseURL = Bundle.main.url(forResource: "linguaflow", withExtension: "sqlite"),
+           let sqliteLexicon = try? SQLiteLexicon(databaseURL: databaseURL) {
+            stateMachine = CompositionStateMachine(lexicon: sqliteLexicon)
+        } else {
+            stateMachine = CompositionStateMachine()
+        }
         super.init(server: server, delegate: delegate, client: inputClient)
     }
 
@@ -54,6 +62,8 @@ final class LinguaFlowInputController: IMKInputController {
 
     override func activateServer(_ sender: Any!) {
         exposureStore.refresh()
+        selectionStore.refresh()
+        stateMachine.updateSelectionCounts(selectionStore.counts)
         super.activateServer(sender)
     }
 
@@ -123,6 +133,11 @@ final class LinguaFlowInputController: IMKInputController {
 
             case let .updateCandidates(candidates, selectedIndex):
                 exposureStore.refresh()
+                let candidateIDs = candidates.map(\.id)
+                if candidateIDs != lastExposedCandidateIDs {
+                    _ = exposureStore.increment(candidates)
+                    lastExposedCandidateIDs = candidateIDs
+                }
                 candidatePanel.show(
                     candidates: candidates,
                     selectedIndex: selectedIndex,
@@ -132,6 +147,7 @@ final class LinguaFlowInputController: IMKInputController {
 
             case .hideCandidates:
                 candidatePanel.hide()
+                lastExposedCandidateIDs = []
 
             case let .insertText(text):
                 inputClient.insertText(
@@ -145,7 +161,8 @@ final class LinguaFlowInputController: IMKInputController {
         }
 
         if let committedCandidate = transition.committedCandidate {
-            _ = exposureStore.increment(committedCandidate)
+            _ = selectionStore.increment(committedCandidate)
+            stateMachine.updateSelectionCounts(selectionStore.counts)
         }
 
         return !transition.forwardsOriginalEvent
