@@ -4,6 +4,7 @@ struct ContentView: View {
     let exposureStore: ExposureStore
 
     @State private var query = ""
+    @State private var submittedCandidate: Candidate?
     @State private var isShowingResetConfirmation = false
 
     private var normalizedQuery: String {
@@ -18,7 +19,16 @@ struct ContentView: View {
         VStack(alignment: .leading, spacing: 24) {
             header
 
-            InputSection(query: $query)
+            InputSection(
+                query: $query,
+                submittedCandidate: submittedCandidate,
+                onSubmit: submitPrimaryCandidate
+            )
+            .onChange(of: normalizedQuery) { _, newValue in
+                if newValue != submittedCandidate?.pinyin {
+                    submittedCandidate = nil
+                }
+            }
 
             Group {
                 if normalizedQuery.isEmpty {
@@ -84,5 +94,14 @@ struct ContentView: View {
             }
             .disabled(!exposureStore.hasExposures)
         }
+    }
+
+    private func submitPrimaryCandidate() {
+        guard let candidate = CandidateCatalog.primaryCandidate(for: query) else {
+            return
+        }
+
+        exposureStore.increment(candidate)
+        submittedCandidate = candidate
     }
 }

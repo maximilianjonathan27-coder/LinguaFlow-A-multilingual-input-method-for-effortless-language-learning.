@@ -1250,4 +1250,6 @@ Try these inputs in the prototype:
 huiyi · anpai · yanqi · shenqing · fangfa
 ```
 
+Press Return to output the first candidate and increase its Seen count. You can also click any Chinese candidate to record that specific candidate.
+
 All candidate data and Seen counts stay on the Mac. This prototype makes no network requests and requests no privacy-sensitive permissions.

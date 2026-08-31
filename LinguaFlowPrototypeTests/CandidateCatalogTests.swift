@@ -19,4 +19,16 @@ final class CandidateCatalogTests: XCTestCase {
         XCTAssertTrue(CandidateCatalog.candidates(for: "   ").isEmpty)
         XCTAssertTrue(CandidateCatalog.candidates(for: "hello").isEmpty)
     }
+
+    func testPrimaryCandidateMatchesReturnKeySelection() {
+        XCTAssertEqual(
+            CandidateCatalog.primaryCandidate(for: " HUIYI ")?.id,
+            "huiyi.meeting"
+        )
+        XCTAssertEqual(
+            CandidateCatalog.primaryCandidate(for: "anpai")?.sourceText,
+            "安排"
+        )
+        XCTAssertNil(CandidateCatalog.primaryCandidate(for: "hello"))
+    }
 }

@@ -38,4 +38,8 @@ enum CandidateCatalog {
     static func candidates(for input: String) -> [Candidate] {
         candidatesByInput[normalizedInput(input)] ?? []
     }
+
+    static func primaryCandidate(for input: String) -> Candidate? {
+        candidates(for: input).first
+    }
 }
