@@ -8,7 +8,7 @@ final class CandidatePanelController {
 
     private let model = CandidatePanelModel()
     private let panel: CandidatePanel
-    private let panelSize = NSSize(width: 430, height: 218)
+    private let panelSize = NSSize(width: 430, height: 258)
 
     init() {
         panel = CandidatePanel(

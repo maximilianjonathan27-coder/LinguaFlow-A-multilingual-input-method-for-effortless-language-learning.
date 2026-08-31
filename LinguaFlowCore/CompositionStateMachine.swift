@@ -9,7 +9,9 @@ public struct CompositionStateMachine: Sendable {
     public enum Action: Equatable, Sendable {
         case insertLetter(Character)
         case backspace
+        case moveCursor(Int)
         case moveSelection(Int)
+        case movePage(Int)
         case selectCandidate(Int)
         case commit(CommitKey)
         case punctuation(String)
@@ -18,7 +20,7 @@ public struct CompositionStateMachine: Sendable {
     }
 
     public enum Effect: Equatable, Sendable {
-        case updateMarkedText(String)
+        case updateMarkedText(String, cursor: Int)
         case updateCandidates([Candidate], selectedIndex: Int)
         case hideCandidates
         case insertText(String)
@@ -40,9 +42,11 @@ public struct CompositionStateMachine: Sendable {
     }
 
     public private(set) var buffer = ""
+    public private(set) var cursor = 0
     public private(set) var selectedIndex = 0
-    private let lexicon: any LexiconRepository
-    private let targetLanguage: String
+    public private(set) var pageIndex = 0
+    public let pageSize = 5
+    private let decoder: PinyinDecoder
     private var selectionCounts: [String: Int]
 
     public init(
@@ -50,17 +54,26 @@ public struct CompositionStateMachine: Sendable {
         targetLanguage: String = "en",
         selectionCounts: [String: Int] = [:]
     ) {
-        self.lexicon = lexicon
-        self.targetLanguage = targetLanguage
+        decoder = PinyinDecoder(lexicon: lexicon, targetLanguage: targetLanguage)
         self.selectionCounts = selectionCounts
     }
 
-    public var candidates: [Candidate] {
+    public var allCandidates: [Candidate] {
         CandidateRanker.rank(
-            lexicon.candidates(for: buffer, targetLanguage: targetLanguage, limit: 50),
+            decoder.candidates(for: buffer, limit: 50),
             for: buffer,
             selectionCounts: selectionCounts
-        ).prefix(9).map { $0 }
+        )
+    }
+
+    public var candidates: [Candidate] {
+        let start = pageIndex * pageSize
+        guard start < allCandidates.count else { return [] }
+        return Array(allCandidates.dropFirst(start).prefix(pageSize))
+    }
+
+    public var pageCount: Int {
+        max(1, Int(ceil(Double(allCandidates.count) / Double(pageSize))))
     }
 
     public mutating func updateSelectionCounts(_ counts: [String: Int]) {
@@ -70,19 +83,31 @@ public struct CompositionStateMachine: Sendable {
     public mutating func handle(_ action: Action) -> Transition {
         switch action {
         case let .insertLetter(character):
-            guard character.isASCII, character.isLetter else {
+            guard character.isASCII, character.isLetter || character == "'" else {
                 return Transition(effects: [.forwardEvent])
             }
-            buffer.append(contentsOf: String(character).lowercased())
+            let insertionIndex = buffer.index(buffer.startIndex, offsetBy: cursor)
+            buffer.insert(contentsOf: String(character).lowercased(), at: insertionIndex)
+            cursor += 1
             selectedIndex = 0
+            pageIndex = 0
             return compositionUpdate()
 
         case .backspace:
             guard !buffer.isEmpty else {
                 return Transition(effects: [.forwardEvent])
             }
-            buffer.removeLast()
+            guard cursor > 0 else { return Transition(effects: [.forwardEvent]) }
+            let removalIndex = buffer.index(buffer.startIndex, offsetBy: cursor - 1)
+            buffer.remove(at: removalIndex)
+            cursor -= 1
             selectedIndex = 0
+            pageIndex = 0
+            return compositionUpdate()
+
+        case let .moveCursor(delta):
+            guard !buffer.isEmpty else { return Transition(effects: [.forwardEvent]) }
+            cursor = min(max(0, cursor + delta), buffer.count)
             return compositionUpdate()
 
         case let .moveSelection(delta):
@@ -93,6 +118,14 @@ public struct CompositionStateMachine: Sendable {
             selectedIndex = (selectedIndex + delta + currentCandidates.count) % currentCandidates.count
             return Transition(effects: [
                 .updateCandidates(currentCandidates, selectedIndex: selectedIndex),
+            ])
+
+        case let .movePage(delta):
+            guard !allCandidates.isEmpty else { return Transition(effects: [.forwardEvent]) }
+            pageIndex = (pageIndex + delta + pageCount) % pageCount
+            selectedIndex = 0
+            return Transition(effects: [
+                .updateCandidates(candidates, selectedIndex: selectedIndex),
             ])
 
         case let .selectCandidate(index):
@@ -119,19 +152,24 @@ public struct CompositionStateMachine: Sendable {
                 return Transition(effects: [.insertText(rawText), .hideCandidates, .forwardEvent])
             }
 
-        case .punctuation:
+        case let .punctuation(punctuation):
             if let candidate = candidates[safe: selectedIndex] {
                 let transition = finish(candidate: candidate)
                 return Transition(
-                    effects: transition.effects + [.forwardEvent],
+                    effects: transition.effects + [.insertText(punctuation)],
                     committedCandidate: candidate
                 )
             }
-            return finishRawTextAndForwardIfNeeded()
+            guard !buffer.isEmpty else {
+                return Transition(effects: [.insertText(punctuation)])
+            }
+            let rawText = buffer
+            reset()
+            return Transition(effects: [.insertText(rawText + punctuation), .hideCandidates])
 
         case .cancel:
             reset()
-            return Transition(effects: [.updateMarkedText(""), .hideCandidates])
+            return Transition(effects: [.updateMarkedText("", cursor: 0), .hideCandidates])
 
         case .deactivate:
             guard !buffer.isEmpty else {
@@ -145,12 +183,14 @@ public struct CompositionStateMachine: Sendable {
 
     public mutating func reset() {
         buffer = ""
+        cursor = 0
         selectedIndex = 0
+        pageIndex = 0
     }
 
     private func compositionUpdate() -> Transition {
         let currentCandidates = candidates
-        var effects: [Effect] = [.updateMarkedText(buffer)]
+        var effects: [Effect] = [.updateMarkedText(buffer, cursor: cursor)]
         if currentCandidates.isEmpty {
             effects.append(.hideCandidates)
         } else {

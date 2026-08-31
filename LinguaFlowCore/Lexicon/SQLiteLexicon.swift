@@ -15,7 +15,8 @@ public final class SQLiteLexicon: LexiconRepository, @unchecked Sendable {
         }
     }
 
-    private let databaseURL: URL
+    private let database: OpaquePointer
+    private let lock = NSLock()
 
     public init(databaseURL: URL) throws {
         var database: OpaquePointer?
@@ -25,11 +26,15 @@ public final class SQLiteLexicon: LexiconRepository, @unchecked Sendable {
             SQLITE_OPEN_READONLY | SQLITE_OPEN_NOMUTEX,
             nil
         )
-        sqlite3_close(database)
-        guard result == SQLITE_OK else {
+        guard result == SQLITE_OK, let database else {
+            sqlite3_close(database)
             throw LexiconError.databaseUnavailable(databaseURL.path)
         }
-        self.databaseURL = databaseURL
+        self.database = database
+    }
+
+    deinit {
+        sqlite3_close(database)
     }
 
     public func candidates(
@@ -40,25 +45,48 @@ public final class SQLiteLexicon: LexiconRepository, @unchecked Sendable {
         let normalized = PinyinNormalizer.normalize(input)
         guard !normalized.isEmpty, limit > 0 else { return [] }
 
-        var database: OpaquePointer?
-        guard sqlite3_open_v2(
-            databaseURL.path,
-            &database,
-            SQLITE_OPEN_READONLY | SQLITE_OPEN_NOMUTEX,
-            nil
-        ) == SQLITE_OK, let database else {
-            sqlite3_close(database)
-            return []
-        }
-        defer { sqlite3_close(database) }
+        return query(
+            whereClause: "l.normalized_pinyin = ?",
+            matchValues: [normalized],
+            targetLanguage: targetLanguage,
+            limit: limit
+        )
+    }
+
+    public func prefixCandidates(
+        for input: String,
+        targetLanguage: String,
+        limit: Int
+    ) -> [Candidate] {
+        let normalized = PinyinNormalizer.normalize(input)
+        guard !normalized.isEmpty, limit > 0 else { return [] }
+        return query(
+            whereClause: "l.normalized_pinyin >= ? AND l.normalized_pinyin < ?",
+            matchValues: [normalized, normalized + "{"],
+            targetLanguage: targetLanguage,
+            limit: limit
+        )
+    }
+
+    private func query(
+        whereClause: String,
+        matchValues: [String],
+        targetLanguage: String,
+        limit: Int
+    ) -> [Candidate] {
+
+        lock.lock()
+        defer { lock.unlock() }
 
         let sql = """
             SELECT l.stable_id, l.pinyin, l.chinese, l.frequency,
-                   t.target_language, t.translation, t.part_of_speech,
-                   t.domain, t.style
+                   COALESCE(t.target_language, ?), COALESCE(t.translation, ''),
+                   t.part_of_speech, COALESCE(t.domain, 'general'),
+                   COALESCE(t.style, 'neutral')
             FROM lexemes AS l
-            JOIN translations AS t ON t.lexeme_id = l.stable_id
-            WHERE l.normalized_pinyin = ? AND t.target_language = ?
+            LEFT JOIN translations AS t
+              ON t.lexeme_id = l.stable_id AND t.target_language = ?
+            WHERE \(whereClause)
             ORDER BY l.frequency DESC, l.stable_id ASC
             LIMIT ?
             """
@@ -69,9 +97,16 @@ public final class SQLiteLexicon: LexiconRepository, @unchecked Sendable {
         }
         defer { sqlite3_finalize(statement) }
 
-        sqlite3_bind_text(statement, 1, normalized, -1, sqliteTransient)
+        sqlite3_bind_text(statement, 1, targetLanguage, -1, sqliteTransient)
         sqlite3_bind_text(statement, 2, targetLanguage, -1, sqliteTransient)
-        sqlite3_bind_int(statement, 3, Int32(min(limit, Int(Int32.max))))
+        for (offset, value) in matchValues.enumerated() {
+            sqlite3_bind_text(statement, Int32(offset + 3), value, -1, sqliteTransient)
+        }
+        sqlite3_bind_int(
+            statement,
+            Int32(matchValues.count + 3),
+            Int32(min(limit, Int(Int32.max)))
+        )
 
         var results: [Candidate] = []
         while sqlite3_step(statement) == SQLITE_ROW {

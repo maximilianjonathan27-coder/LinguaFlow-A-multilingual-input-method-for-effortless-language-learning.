@@ -13,6 +13,13 @@ private func property(_ key: CFString, from source: TISInputSource) -> Any? {
     return Unmanaged<AnyObject>.fromOpaque(pointer).takeUnretainedValue()
 }
 
+if CommandLine.arguments.count == 2, CommandLine.arguments[1] == "--current" {
+    let source = TISCopyCurrentKeyboardInputSource().takeRetainedValue()
+    let sourceIdentifier = property(kTISPropertyInputSourceID, from: source) as? String ?? "unknown"
+    print(sourceIdentifier)
+    exit(0)
+}
+
 if CommandLine.arguments.count == 3, CommandLine.arguments[1] == "--verify" {
     let expectedBundleIdentifier = CommandLine.arguments[2]
     let sources = TISCreateInputSourceList(nil, true).takeRetainedValue() as NSArray
@@ -36,9 +43,36 @@ if CommandLine.arguments.count == 3, CommandLine.arguments[1] == "--verify" {
     exit(0)
 }
 
+if CommandLine.arguments.count == 3, CommandLine.arguments[1] == "--select" {
+    let expectedSourceIdentifier = CommandLine.arguments[2]
+    let sources = TISCreateInputSourceList(nil, true).takeRetainedValue() as NSArray
+
+    for case let source as TISInputSource in sources {
+        let sourceIdentifier = property(kTISPropertyInputSourceID, from: source) as? String ?? ""
+        guard sourceIdentifier == expectedSourceIdentifier else {
+            continue
+        }
+
+        let enableStatus = TISEnableInputSource(source)
+        guard enableStatus == noErr else {
+            fail("TISEnableInputSource failed with status \(enableStatus)")
+        }
+
+        let selectionStatus = TISSelectInputSource(source)
+        guard selectionStatus == noErr else {
+            fail("TISSelectInputSource failed with status \(selectionStatus)")
+        }
+
+        print("Selected input source: \(sourceIdentifier)")
+        exit(0)
+    }
+
+    fail("Input source was not found: \(expectedSourceIdentifier)")
+}
+
 guard CommandLine.arguments.count == 2 else {
     fail(
-        "usage: register_input_source.swift <input-method.app> | --verify <bundle-id>",
+        "usage: register_input_source.swift <input-method.app> | --current | --verify <bundle-id> | --select <source-id>",
         status: 2
     )
 }

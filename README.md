@@ -2,6 +2,28 @@
 
 > **Type naturally. Learn effortlessly.**
 
+## Local macOS MVP status
+
+The current local build is a native InputMethodKit input method with:
+
+- a read-only SQLite lexicon containing about 108,000 Chinese words and characters;
+- continuous pinyin decoding, such as `nihao` and `woxiangqubeijing`;
+- five candidates per page, number-key selection, paging, cursor editing, and Chinese punctuation;
+- separate exposure and selection counters for future learning and ranking features;
+- English candidate definitions imported from CC-CEDICT, with manually reviewed
+  translations taking precedence for the seed records.
+
+Build and install locally with:
+
+```sh
+./script/build_and_run.sh --install-ime
+```
+
+After installation, select **LinguaFlow** from the macOS input menu and test in
+TextEdit. The locally imported rime-ice data is GPL-3.0; review the distribution
+and licensing strategy before publishing a binary or committing the generated
+database.
+
 LinguaFlow is a multilingual input method designed to turn everyday typing into effortless language learning.
 
 Instead of asking users to open a separate translator, LinguaFlow brings **real-time translations directly into the input candidate interface**. As you type, relevant translations appear alongside your input, allowing language exposure to happen naturally within the workflow.

@@ -1,8 +1,17 @@
 # Lexicon data provenance
 
 The seed lexicon in `lexicon.tsv` and `translations.tsv` was written for the
-LinguaFlow prototype. No third-party dictionary data is bundled in the current
-database.
+LinguaFlow prototype.
+
+The generated database imports
+`External/rime_ice_base.dict.yaml` and `External/rime_ice_8105.dict.yaml` from
+`iDvel/rime-ice`. The matching GPL-3.0 license text is stored locally as
+`External/rime-ice-GPL-3.0.txt`.
+
+English definitions are imported from CC-CEDICT, published by MDBG under
+CC BY-SA 4.0. The unmodified source export retains its attribution header in
+`External/cedict_ts.u8`, and the license text is stored in
+`External/CC-BY-SA-4.0.txt`.
 
 Potential future sources must be reviewed file by file before import. In
 particular, a repository-level license does not necessarily cover aggregated
@@ -12,6 +21,8 @@ Candidate sources supplied for later evaluation:
 
 - Peter Norvig `count_1w.txt`: English unigram counts, not bilingual translations.
 - `wuhgit/CustomPinyinDictionary`: aggregated Chinese input-method dictionaries.
-- `iDvel/rime-ice`: Rime configuration and dictionaries under GPL-3.0 at the repository root.
+- `iDvel/rime-ice`: currently used by the local development build; GPL-3.0.
+- CC-CEDICT: currently used for Chinese-to-English candidate definitions;
+  CC BY-SA 4.0, published by MDBG.
 - Microsoft Windows SampleIME dictionary: sample IME data and implementation reference.
 - `KyleBing/rime-wubi86-jidian`: Wubi dictionary, not a pinyin source.

@@ -25,7 +25,7 @@ struct CandidatePanelView: View {
             }
         }
         .padding(6)
-        .frame(width: 430, height: 218)
+        .frame(width: 430, height: 258)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
@@ -55,8 +55,8 @@ struct CandidatePanelView: View {
                         .font(.system(size: 18, weight: .bold))
                         .foregroundStyle(index == model.selectedIndex ? Color.white : .primary)
 
-                    Text(candidate.translation)
-                        .font(.system(size: 13, weight: .medium))
+                    Text(candidate.translation.isEmpty ? "Translation unavailable" : candidate.translation)
+                        .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(index == model.selectedIndex ? Color.white.opacity(0.78) : .secondary)
                 }
 
@@ -67,7 +67,7 @@ struct CandidatePanelView: View {
                     .foregroundStyle(index == model.selectedIndex ? Color.white.opacity(0.58) : Color.secondary.opacity(0.45))
             }
             .padding(.horizontal, 12)
-            .frame(maxWidth: .infinity, minHeight: 64)
+            .frame(maxWidth: .infinity, minHeight: 48)
             .contentShape(Rectangle())
             .background {
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
@@ -76,7 +76,7 @@ struct CandidatePanelView: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(
-            "候选 \(index + 1)，\(candidate.sourceText)，英文 \(candidate.translation)，Seen \(model.counts[candidate.id, default: 0]) 次"
+            "候选 \(index + 1)，\(candidate.sourceText)，\(candidate.translation.isEmpty ? "暂无翻译" : candidate.translation)，Seen \(model.counts[candidate.id, default: 0]) 次"
         )
     }
 }

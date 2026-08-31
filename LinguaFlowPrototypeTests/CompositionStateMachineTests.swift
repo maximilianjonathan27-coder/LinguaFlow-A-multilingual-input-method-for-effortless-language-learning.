@@ -11,7 +11,7 @@ final class CompositionStateMachineTests: XCTestCase {
         }
 
         XCTAssertEqual(machine.buffer, "huiyi")
-        XCTAssertTrue(transition.effects.contains(.updateMarkedText("huiyi")))
+        XCTAssertTrue(transition.effects.contains(.updateMarkedText("huiyi", cursor: 5)))
         XCTAssertTrue(transition.effects.contains { effect in
             if case let .updateCandidates(candidates, selectedIndex) = effect {
                 return candidates.count == 3 && selectedIndex == 0
@@ -77,7 +77,7 @@ final class CompositionStateMachineTests: XCTestCase {
         XCTAssertEqual(transition.committedCandidate?.sourceText, "延期")
         XCTAssertEqual(
             transition.effects,
-            [.insertText("延期"), .hideCandidates, .forwardEvent]
+            [.insertText("延期"), .hideCandidates, .insertText("。")]
         )
     }
 
@@ -85,11 +85,20 @@ final class CompositionStateMachineTests: XCTestCase {
         var machine = makeMachine(with: "hui")
         let backspace = machine.handle(.backspace)
         XCTAssertEqual(machine.buffer, "hu")
-        XCTAssertTrue(backspace.effects.contains(.updateMarkedText("hu")))
+        XCTAssertTrue(backspace.effects.contains(.updateMarkedText("hu", cursor: 2)))
 
         let cancel = machine.handle(.cancel)
-        XCTAssertEqual(cancel.effects, [.updateMarkedText(""), .hideCandidates])
+        XCTAssertEqual(cancel.effects, [.updateMarkedText("", cursor: 0), .hideCandidates])
         XCTAssertTrue(machine.buffer.isEmpty)
+    }
+
+    func testCursorCanEditInsideComposition() {
+        var machine = makeMachine(with: "nihao")
+        _ = machine.handle(.moveCursor(-2))
+        _ = machine.handle(.insertLetter("m"))
+
+        XCTAssertEqual(machine.buffer, "nihmao")
+        XCTAssertEqual(machine.cursor, 4)
     }
 
     func testDeactivateCommitsRawCompositionWithoutExposure() {

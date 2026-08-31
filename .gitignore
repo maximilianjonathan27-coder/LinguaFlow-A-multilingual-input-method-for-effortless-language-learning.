@@ -6,3 +6,4 @@ build/
 xcuserdata/
 *.xccheckout
 *.xcscmblueprint
+LinguaFlowInputMethod/Resources/.linguaflow-*.sqlite

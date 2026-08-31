@@ -38,6 +38,10 @@ final class LinguaFlowInputController: IMKInputController {
 
         let shortcutModifiers = event.modifierFlags.intersection([.command, .control, .option])
         guard shortcutModifiers.isEmpty else { return false }
+        if stateMachine.buffer.isEmpty,
+           event.modifierFlags.contains(.capsLock) || event.modifierFlags.contains(.shift) {
+            return false
+        }
 
         guard let action = action(for: event) else {
             if stateMachine.buffer.isEmpty { return false }
@@ -97,21 +101,34 @@ final class LinguaFlowInputController: IMKInputController {
             return .backspace
         case 53:
             return .cancel
+        case 123:
+            return .moveCursor(-1)
+        case 124:
+            return .moveCursor(1)
         case 125:
             return .moveSelection(1)
         case 126:
             return .moveSelection(-1)
+        case 116:
+            return .movePage(-1)
+        case 121:
+            return .movePage(1)
         default:
             break
         }
 
         let text = event.charactersIgnoringModifiers ?? ""
-        if let number = Int(text), (1...3).contains(number), !stateMachine.candidates.isEmpty {
+        if let number = Int(text), (1...5).contains(number), !stateMachine.candidates.isEmpty {
             return .selectCandidate(number - 1)
         }
 
-        if text.count == 1, let character = text.first, character.isASCII, character.isLetter {
+        if text.count == 1, let character = text.first,
+           character.isASCII, character.isLetter || character == "'" {
             return .insertLetter(character)
+        }
+
+        if let punctuation = Self.chinesePunctuation[text] {
+            return .punctuation(punctuation)
         }
 
         return nil
@@ -123,11 +140,10 @@ final class LinguaFlowInputController: IMKInputController {
     ) -> Bool {
         for effect in transition.effects {
             switch effect {
-            case let .updateMarkedText(text):
-                let length = (text as NSString).length
+            case let .updateMarkedText(text, cursor):
                 inputClient.setMarkedText(
                     text,
-                    selectionRange: NSRange(location: length, length: 0),
+                    selectionRange: NSRange(location: cursor, length: 0),
                     replacementRange: NSRange(location: NSNotFound, length: NSNotFound)
                 )
 
@@ -188,4 +204,10 @@ final class LinguaFlowInputController: IMKInputController {
         guard let inputClient = client() else { return }
         _ = apply(stateMachine.handle(.selectCandidate(index)), to: inputClient)
     }
+
+    private static let chinesePunctuation: [String: String] = [
+        ",": "，", ".": "。", "?": "？", "!": "！",
+        ";": "；", ":": "：", "(": "（", ")": "）",
+        "[": "【", "]": "】", "<": "《", ">": "》",
+    ]
 }
