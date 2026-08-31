@@ -9,7 +9,7 @@ IME_BUNDLE_ID="com.tianxq.inputmethod.LinguaFlow"
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PROJECT_PATH="$ROOT_DIR/LinguaFlowPrototype.xcodeproj"
-DERIVED_DATA="$ROOT_DIR/.build/DerivedData"
+DERIVED_DATA="${LINGUAFLOW_DERIVED_DATA:-$ROOT_DIR/.build/DerivedData}"
 APP_BUNDLE="$DERIVED_DATA/Build/Products/Debug/$APP_NAME.app"
 IME_BUNDLE="$DERIVED_DATA/Build/Products/Debug/$IME_NAME.app"
 INSTALLED_IME="$HOME/Library/Input Methods/$IME_NAME.app"

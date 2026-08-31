@@ -177,7 +177,10 @@ final class InputMethodInstaller {
         let filter = [
             kTISPropertyInputSourceID as String: identifier
         ] as CFDictionary
-        let sources = TISCreateInputSourceList(filter, true).takeRetainedValue()
+        guard let unmanagedSources = TISCreateInputSourceList(filter, true) else {
+            return nil
+        }
+        let sources = unmanagedSources.takeRetainedValue()
         guard CFArrayGetCount(sources) > 0,
               let pointer = CFArrayGetValueAtIndex(sources, 0) else {
             return nil
