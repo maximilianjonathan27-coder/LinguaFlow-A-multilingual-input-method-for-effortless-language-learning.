@@ -120,14 +120,20 @@ func rimeIceRows(at url: URL, maximumCount: Int) throws -> [LexemeRow] {
         }
     }
 
-    let sorted = bestByKey.values.sorted { $0.frequency > $1.frequency }
+    let sorted = bestByKey.values.sorted {
+        if $0.frequency != $1.frequency { return $0.frequency > $1.frequency }
+        return $0.id < $1.id
+    }
     let highFrequency = sorted.prefix(maximumCount)
     let commonCharacters = sorted.filter { $0.chinese.count == 1 }
     var selectedByID: [String: LexemeRow] = [:]
     for row in Array(highFrequency) + commonCharacters {
         selectedByID[row.id] = row
     }
-    return selectedByID.values.sorted { $0.frequency > $1.frequency }
+    return selectedByID.values.sorted {
+        if $0.frequency != $1.frequency { return $0.frequency > $1.frequency }
+        return $0.id < $1.id
+    }
 }
 
 let externalLexemes = try rimeIceRows(
