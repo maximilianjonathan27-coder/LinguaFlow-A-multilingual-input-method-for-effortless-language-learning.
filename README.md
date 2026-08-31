@@ -1,0 +1,2 @@
+# LinguaFlow-A-multilingual-input-method-for-effortless-language-learning.
+LinguaFlow is a multilingual input method that brings real-time translations directly into input candidates, turning everyday typing into effortless language learning. Get context-aware translations tailored to your style and domain, build vocabulary through micro-recall, and explore pronunciation, definitions, and examples on demand.
