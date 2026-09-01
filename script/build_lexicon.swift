@@ -94,7 +94,11 @@ func cedictTranslations(at url: URL) throws -> [String: String] {
     return translationsByChinese
 }
 
-func rimeIceRows(at url: URL, maximumCount: Int) throws -> [LexemeRow] {
+func rimeIceRows(
+    at url: URL,
+    maximumCount: Int,
+    commonFrequencyFloor: Int? = nil
+) throws -> [LexemeRow] {
     guard FileManager.default.fileExists(atPath: url.path) else { return [] }
     let content = try String(contentsOf: url, encoding: .utf8)
     var bestByKey: [String: LexemeRow] = [:]
@@ -125,9 +129,14 @@ func rimeIceRows(at url: URL, maximumCount: Int) throws -> [LexemeRow] {
         return $0.id < $1.id
     }
     let highFrequency = sorted.prefix(maximumCount)
+    let commonWords = commonFrequencyFloor.map { floor in
+        sorted.filter { $0.frequency >= floor }
+    } ?? []
     let commonCharacters = sorted.filter { $0.chinese.count == 1 }
     var selectedByID: [String: LexemeRow] = [:]
-    for row in Array(highFrequency) + commonCharacters {
+    // A global top-N cut alone drops ordinary words such as 泥巴 because
+    // unrelated proper nouns and long phrases consume the shared quota.
+    for row in Array(highFrequency) + commonWords + commonCharacters {
         selectedByID[row.id] = row
     }
     return selectedByID.values.sorted {
@@ -138,7 +147,8 @@ func rimeIceRows(at url: URL, maximumCount: Int) throws -> [LexemeRow] {
 
 let externalLexemes = try rimeIceRows(
     at: sourceDirectory.appendingPathComponent("External/rime_ice_base.dict.yaml"),
-    maximumCount: 100_000
+    maximumCount: 100_000,
+    commonFrequencyFloor: 2_000
 )
 let commonCharacters = try rimeIceRows(
     at: sourceDirectory.appendingPathComponent("External/rime_ice_8105.dict.yaml"),
@@ -195,12 +205,18 @@ try execute("""
         stable_id TEXT PRIMARY KEY,
         pinyin TEXT NOT NULL,
         normalized_pinyin TEXT NOT NULL,
+        pinyin_initials TEXT NOT NULL,
+        pinyin_length INTEGER NOT NULL,
         chinese TEXT NOT NULL,
         frequency INTEGER NOT NULL DEFAULT 0,
         UNIQUE (normalized_pinyin, chinese)
     );
     CREATE INDEX lexemes_pinyin_frequency
         ON lexemes(normalized_pinyin, frequency DESC);
+    CREATE INDEX lexemes_initials_frequency
+        ON lexemes(pinyin_initials, frequency DESC);
+    CREATE INDEX lexemes_length_frequency
+        ON lexemes(pinyin_length, frequency DESC);
     CREATE TABLE translations (
         lexeme_id TEXT NOT NULL REFERENCES lexemes(stable_id),
         target_language TEXT NOT NULL,
@@ -231,14 +247,19 @@ func executePrepared(_ statement: OpaquePointer) throws {
     sqlite3_clear_bindings(statement)
 }
 
-let lexemeStatement = try prepare("INSERT OR IGNORE INTO lexemes VALUES (?, ?, ?, ?, ?)")
+let lexemeStatement = try prepare("INSERT OR IGNORE INTO lexemes VALUES (?, ?, ?, ?, ?, ?, ?)")
 for row in allLexemes {
     let normalized = row.pinyin.lowercased().filter { $0.isASCII && $0.isLetter }
+    let syllables = row.pinyin.lowercased()
+        .split(whereSeparator: { $0.isWhitespace || $0 == "'" })
+    let initials = syllables.compactMap(\.first).map(String.init).joined()
     sqlite3_bind_text(lexemeStatement, 1, row.id, -1, transient)
     sqlite3_bind_text(lexemeStatement, 2, row.pinyin, -1, transient)
     sqlite3_bind_text(lexemeStatement, 3, normalized, -1, transient)
-    sqlite3_bind_text(lexemeStatement, 4, row.chinese, -1, transient)
-    sqlite3_bind_int64(lexemeStatement, 5, sqlite3_int64(row.frequency))
+    sqlite3_bind_text(lexemeStatement, 4, initials, -1, transient)
+    sqlite3_bind_int64(lexemeStatement, 5, sqlite3_int64(normalized.count))
+    sqlite3_bind_text(lexemeStatement, 6, row.chinese, -1, transient)
+    sqlite3_bind_int64(lexemeStatement, 7, sqlite3_int64(row.frequency))
     try executePrepared(lexemeStatement)
 }
 

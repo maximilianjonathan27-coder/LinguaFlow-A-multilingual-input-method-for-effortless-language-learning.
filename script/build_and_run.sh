@@ -6,6 +6,7 @@ APP_NAME="LinguaFlowPrototype"
 IME_NAME="LinguaFlow"
 BUNDLE_ID="com.tianxq.LinguaFlowPrototype"
 IME_BUNDLE_ID="com.tianxq.inputmethod.LinguaFlow"
+IME_SOURCE_ID="$IME_BUNDLE_ID.pinyin"
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PROJECT_PATH="$ROOT_DIR/LinguaFlowPrototype.xcodeproj"
@@ -81,10 +82,17 @@ clear_signing_xattrs() {
 sign_bundle() {
   local bundle="$1"
   [[ -d "$bundle" ]] || return 0
-  xattr -cr "$bundle" || true
-  xattr -d com.apple.FinderInfo "$bundle" 2>/dev/null || true
-  xattr -d 'com.apple.fileprovider.fpfs#P' "$bundle" 2>/dev/null || true
-  codesign --force --deep --sign "$SIGNING_IDENTITY" "$bundle"
+  local attempt
+  for attempt in 1 2 3; do
+    xattr -cr "$bundle" || true
+    xattr -d com.apple.FinderInfo "$bundle" 2>/dev/null || true
+    xattr -d 'com.apple.fileprovider.fpfs#P' "$bundle" 2>/dev/null || true
+    if codesign --force --deep --sign "$SIGNING_IDENTITY" "$bundle"; then
+      return 0
+    fi
+  done
+  echo "Unable to sign $bundle after 3 attempts." >&2
+  return 1
 }
 
 build_lexicon() {
@@ -148,7 +156,20 @@ install_ime_from_build() {
   lsregister="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
   "$lsregister" -f -R -trusted "$INSTALLED_IME" >/dev/null 2>&1 || true
   xcrun swift "$ROOT_DIR/script/register_input_source.swift" "$INSTALLED_IME"
+  /usr/bin/open -g "$INSTALLED_IME"
+  for _ in {1..20}; do
+    if pgrep -x "$IME_NAME" >/dev/null; then
+      break
+    fi
+    sleep 0.25
+  done
+  if ! pgrep -x "$IME_NAME" >/dev/null; then
+    echo "$IME_NAME did not restart after installation." >&2
+    return 1
+  fi
+  xcrun swift "$ROOT_DIR/script/register_input_source.swift" --select "$IME_SOURCE_ID"
   echo "Installed: $INSTALLED_IME"
+  echo "$IME_NAME input method service is running."
   echo "Next: System Settings → Keyboard → Text Input → Edit → add LinguaFlow."
 }
 

@@ -11,6 +11,14 @@ final class CandidatePanelModel: ObservableObject {
     @Published var candidateNumberOffset = 0
     @Published var pageIndex = 0
     @Published var pageCount = 1
+
+    var panelHeight: CGFloat {
+        if isExpanded {
+            let rows = max(1, Int(ceil(Double(candidates.count) / 3.0)))
+            return CGFloat(72 + rows * 54 + max(0, rows - 1) * 8)
+        }
+        return CGFloat(max(1, candidates.count) * 40 + 10)
+    }
 }
 
 struct CandidatePanelView: View {
@@ -34,7 +42,7 @@ struct CandidatePanelView: View {
         .padding(model.isExpanded ? 7 : 5)
         .frame(
             width: model.isExpanded ? 620 : 360,
-            height: model.isExpanded ? 320 : 218
+            height: model.panelHeight
         )
         .background {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
@@ -108,9 +116,6 @@ struct CandidatePanelView: View {
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
                 Spacer()
-                Image(systemName: "arrow.left")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(.secondary)
             }
             .padding(.horizontal, 4)
             .frame(height: 18)
@@ -138,11 +143,14 @@ struct CandidatePanelView: View {
 
     private func candidateCard(_ candidate: Candidate, index: Int) -> some View {
         let isSelected = index == model.selectedIndex
+        let isInSelectedRow = index / 3 == model.selectedIndex / 3
         return Button {
             onSelect(candidate.id)
         } label: {
             HStack(alignment: .top, spacing: 8) {
                 numberBadge(index, isSelected: isSelected)
+                    .opacity(isInSelectedRow ? 1 : 0)
+                    .accessibilityHidden(!isInSelectedRow)
                 candidateText(candidate, isSelected: isSelected)
                 Spacer(minLength: 0)
             }

@@ -10,7 +10,6 @@ final class CandidatePanelController {
     private let model = CandidatePanelModel()
     private let panel: CandidatePanel
     private let compactSize = NSSize(width: 360, height: 218)
-    private let expandedSize = NSSize(width: 620, height: 320)
     private let expandedPageSize = 12
     private var compactCandidates: [Candidate] = []
     private var expandedCandidates: [Candidate] = []
@@ -180,7 +179,10 @@ final class CandidatePanelController {
     }
 
     private func positionPanel() {
-        let size = model.isExpanded ? expandedSize : compactSize
+        let size = NSSize(
+            width: model.isExpanded ? 620 : compactSize.width,
+            height: model.panelHeight
+        )
         let screen = screen(containing: lastAnchor) ?? NSScreen.main ?? NSScreen.screens.first
         guard let visibleFrame = screen?.visibleFrame else { return }
         let frame = PanelPositioner.frame(
