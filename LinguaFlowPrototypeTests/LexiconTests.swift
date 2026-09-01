@@ -39,6 +39,28 @@ final class LexiconTests: XCTestCase {
         XCTAssertEqual(ranked.map(\.sourceText), ["先", "西安"])
     }
 
+    func testRankerPreservesLibrimeSentenceOrderForTypoRecovery() {
+        let candidates = [
+            Candidate(
+                id: "rime:zheggai:0:这更改",
+                pinyin: "zhe geng gai",
+                sourceText: "这更改",
+                translation: "",
+                frequency: 2_000_000_000
+            ),
+            Candidate(
+                id: "rime:zheggai:1:这",
+                pinyin: "zhe",
+                sourceText: "这",
+                translation: "this",
+                frequency: 1_999_999_999
+            ),
+        ]
+
+        let ranked = CandidateRanker.rank(candidates, for: "zheggai", selectionCounts: [:])
+        XCTAssertEqual(ranked.map(\.sourceText), ["这更改", "这"])
+    }
+
     func testChinesePunctuationMappingsCoverCommonKeyboardSymbols() {
         XCTAssertEqual(PinyinNormalizer.chinesePunctuation(for: ","), "，")
         XCTAssertEqual(PinyinNormalizer.chinesePunctuation(for: "."), "。")

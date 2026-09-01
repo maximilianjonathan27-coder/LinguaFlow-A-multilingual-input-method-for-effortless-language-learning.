@@ -60,19 +60,30 @@ public enum CandidateRanker {
         _ selectionCounts: [String: Int],
         explicitSegments: [String]
     ) -> Int64 {
+        let isRimeCandidate = candidate.id.hasPrefix("rime:")
         let isExact = PinyinNormalizer.normalize(candidate.pinyin) == normalizedInput
-        let exactBonus: Int64 = isExact ? 5_000_000 : 0
-        let frequencyScore = Int64(log1p(Double(max(0, candidate.frequency))) * 100_000)
+        // librime has already decoded spelling errors, syllable boundaries and
+        // sentence probability. Do not run its candidates through the legacy
+        // exact/prefix/frequency heuristics again: doing so promoted `这/着/者`
+        // ahead of librime's complete `zheggai` suggestions.
+        let exactBonus: Int64 = !isRimeCandidate && isExact ? 5_000_000 : 0
+        let frequencyScore = isRimeCandidate
+            ? 100_000_000
+            : Int64(log1p(Double(max(0, candidate.frequency))) * 100_000)
         let selectionBonus = Int64(selectionCounts[candidate.id, default: 0]) * 75_000
-        let coverageBonus = Int64(matchedPrefixLength(candidate, normalizedInput)) * 1_500_000
+        let coverageBonus = isRimeCandidate
+            ? 0
+            : Int64(matchedPrefixLength(candidate, normalizedInput)) * 1_500_000
 
         // Long entries are often titles, organization names, or imported proper nouns.
         // Keep them searchable, but do not let a noisy source frequency place them ahead
         // of everyday words while the user has only typed a short prefix.
-        let longEntryPenalty: Int64 = isExact || candidate.domain == "english"
+        let longEntryPenalty: Int64 = isRimeCandidate || isExact || candidate.domain == "english"
             ? 0
             : Int64(max(0, candidate.sourceText.count - 2)) * 150_000
-        let missingTranslationPenalty: Int64 = candidate.translation.isEmpty ? 75_000 : 0
+        let missingTranslationPenalty: Int64 = !isRimeCandidate && candidate.translation.isEmpty
+            ? 75_000
+            : 0
         let candidateSegments = candidate.pinyin.lowercased()
             .split(whereSeparator: { $0.isWhitespace || $0 == "'" })
             .map(String.init)
