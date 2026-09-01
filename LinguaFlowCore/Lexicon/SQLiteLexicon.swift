@@ -76,6 +76,73 @@ public final class SQLiteLexicon: LexiconRepository, @unchecked Sendable {
         )
     }
 
+    public func abbreviationCandidates(
+        for initials: String,
+        targetLanguage: String,
+        limit: Int
+    ) -> [Candidate] {
+        let normalized = PinyinNormalizer.normalize(initials)
+        guard !normalized.isEmpty, limit > 0 else { return [] }
+        // Schema v2 stores the original syllable-separated pinyin instead of a
+        // duplicated initials column. Match one initial per syllable so `nky`
+        // still finds `ni ke yi` without coupling the reader to the old schema.
+        let pattern = normalized.map { String($0) + "*" }.joined(separator: " ")
+        return query(
+            whereClause: "LOWER(l.pinyin) GLOB ?",
+            matchValues: [pattern],
+            targetLanguage: targetLanguage,
+            limit: limit
+        )
+    }
+
+    public func correctionCandidates(
+        for input: String,
+        targetLanguage: String,
+        limit: Int
+    ) -> [Candidate] {
+        let normalized = PinyinNormalizer.normalize(input)
+        guard normalized.count >= 4, limit > 0 else { return [] }
+        let correctionKeys = PinyinNormalizer.singleEditCorrectionKeys(for: normalized)
+        guard !correctionKeys.isEmpty else { return [] }
+        let characters = Array(normalized)
+        var repeatedKeyCorrections: Set<String> = []
+        if characters.count > 1 {
+            for index in 1..<characters.count where characters[index] == characters[index - 1] {
+                var corrected = characters
+                corrected.remove(at: index)
+                repeatedKeyCorrections.insert(String(corrected))
+            }
+        }
+
+        var results: [Candidate] = []
+        if !repeatedKeyCorrections.isEmpty {
+            let repeatedKeys = repeatedKeyCorrections.sorted()
+            let placeholders = Array(repeating: "?", count: repeatedKeys.count)
+                .joined(separator: ", ")
+            results.append(contentsOf: query(
+                whereClause: "l.normalized_pinyin IN (\(placeholders))",
+                matchValues: repeatedKeys,
+                targetLanguage: targetLanguage,
+                limit: limit
+            ))
+        }
+
+        let placeholders = Array(repeating: "?", count: correctionKeys.count)
+            .joined(separator: ", ")
+        results.append(contentsOf: query(
+            whereClause: "l.normalized_pinyin IN (\(placeholders))",
+            matchValues: correctionKeys,
+            targetLanguage: targetLanguage,
+            limit: max(100, limit * 5)
+        ))
+
+        var seenIDs: Set<String> = []
+        return results
+            .filter { seenIDs.insert($0.id).inserted }
+            .prefix(limit)
+            .map { $0 }
+    }
+
     private func query(
         whereClause: String,
         matchValues: [String],

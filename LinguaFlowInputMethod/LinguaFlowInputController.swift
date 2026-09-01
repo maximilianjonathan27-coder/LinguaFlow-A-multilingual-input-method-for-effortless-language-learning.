@@ -1,14 +1,20 @@
 import AppKit
 import InputMethodKit
 import LinguaFlowCore
+import OSLog
 
 @objc(LinguaFlowInputController)
 @MainActor
 final class LinguaFlowInputController: IMKInputController {
+    private static let logger = Logger(
+        subsystem: "com.tianxq.inputmethod.LinguaFlow",
+        category: "InputController"
+    )
     private var stateMachine: CompositionStateMachine
     private lazy var exposureStore = ExposureStore()
     private lazy var selectionStore = SelectionStore()
     private var lastExposedCandidateIDs: [String] = []
+    private var lastCaretRectangle = NSRect.zero
     private lazy var candidatePanel: CandidatePanelController = {
         let controller = CandidatePanelController()
         controller.onSelect = { [weak self] candidateID in
@@ -31,9 +37,16 @@ final class LinguaFlowInputController: IMKInputController {
             stateMachine = CompositionStateMachine()
         }
         super.init(server: server, delegate: delegate, client: inputClient)
+        Self.logger.notice("Input controller initialized")
+    }
+
+    override func recognizedEvents(_ sender: Any!) -> Int {
+        Self.logger.debug("Recognized events requested")
+        return Int(NSEvent.EventTypeMask.keyDown.rawValue)
     }
 
     override func handle(_ event: NSEvent!, client sender: Any!) -> Bool {
+        Self.logger.debug("Received event keyCode=\(event?.keyCode ?? 0)")
         guard
             let event,
             event.type == .keyDown,
@@ -44,8 +57,11 @@ final class LinguaFlowInputController: IMKInputController {
 
         let shortcutModifiers = event.modifierFlags.intersection([.command, .control, .option])
         guard shortcutModifiers.isEmpty else { return false }
+        let keyText = event.charactersIgnoringModifiers ?? ""
         if stateMachine.buffer.isEmpty,
-           event.modifierFlags.contains(.capsLock) || event.modifierFlags.contains(.shift) {
+           event.modifierFlags.contains(.capsLock) || event.modifierFlags.contains(.shift),
+           keyText.count == 1,
+           keyText.first?.isLetter == true {
             return false
         }
 
@@ -58,7 +74,6 @@ final class LinguaFlowInputController: IMKInputController {
             return true
         }
 
-        let keyText = event.charactersIgnoringModifiers ?? ""
         if keyText == "=", !stateMachine.buffer.isEmpty, !stateMachine.allCandidates.isEmpty {
             if candidatePanel.isExpanded {
                 candidatePanel.moveExpandedRow(1)
@@ -110,8 +125,53 @@ final class LinguaFlowInputController: IMKInputController {
         return apply(stateMachine.handle(action), to: inputClient)
     }
 
+    override func inputText(
+        _ string: String!,
+        key keyCode: Int,
+        modifiers flags: Int,
+        client sender: Any!
+    ) -> Bool {
+        Self.logger.debug("Received unpacked text event keyCode=\(keyCode)")
+        guard let event = NSEvent.keyEvent(
+            with: .keyDown,
+            location: .zero,
+            modifierFlags: NSEvent.ModifierFlags(rawValue: UInt(flags)),
+            timestamp: 0,
+            windowNumber: 0,
+            context: nil,
+            characters: string ?? "",
+            charactersIgnoringModifiers: string ?? "",
+            isARepeat: false,
+            keyCode: UInt16(clamping: keyCode)
+        ) else { return false }
+        return handle(event, client: sender)
+    }
+
+    override func inputText(_ string: String!, client sender: Any!) -> Bool {
+        Self.logger.debug("Received keybinding text")
+        guard let string,
+              let inputClient = sender as? (any IMKTextInput),
+              !string.isEmpty
+        else { return false }
+
+        var handled = false
+        for character in string {
+            if character.isASCII, character.isLetter
+                || character == "'" && !stateMachine.buffer.isEmpty {
+                handled = apply(stateMachine.handle(.insertLetter(character)), to: inputClient)
+            } else if let punctuation = PinyinNormalizer.chinesePunctuation(
+                for: String(character)
+            ) {
+                handled = apply(stateMachine.handle(.punctuation(punctuation)), to: inputClient)
+            } else {
+                return false
+            }
+        }
+        return handled
+    }
+
     override func composedString(_ sender: Any!) -> Any! {
-        stateMachine.buffer
+        stateMachine.displayedBuffer
     }
 
     override func commitComposition(_ sender: Any!) {
@@ -176,17 +236,27 @@ final class LinguaFlowInputController: IMKInputController {
             break
         }
 
-        let text = event.charactersIgnoringModifiers ?? ""
-        if let number = Int(text), (1...5).contains(number), !stateMachine.candidates.isEmpty {
+        let unmodifiedText = event.charactersIgnoringModifiers ?? ""
+        let producedText = event.characters ?? unmodifiedText
+        if let number = Int(unmodifiedText),
+           (1...5).contains(number),
+           !stateMachine.candidates.isEmpty {
             return .selectCandidate(number - 1)
         }
 
-        if text.count == 1, let character = text.first,
-           character.isASCII, character.isLetter || character == "'" {
+        if unmodifiedText.count == 1,
+           let character = unmodifiedText.first,
+           character.isASCII,
+           character.isLetter {
             return .insertLetter(character)
         }
+        if producedText == "'", !stateMachine.buffer.isEmpty {
+            if let character = producedText.first {
+                return .insertLetter(character)
+            }
+        }
 
-        if let punctuation = Self.chinesePunctuation[text] {
+        if let punctuation = PinyinNormalizer.chinesePunctuation(for: producedText) {
             return .punctuation(punctuation)
         }
 
@@ -217,7 +287,7 @@ final class LinguaFlowInputController: IMKInputController {
                     compactCandidates: candidates,
                     expandedCandidates: stateMachine.allCandidates,
                     selectedCandidateID: candidates[safe: selectedIndex]?.id,
-                    query: stateMachine.buffer,
+                    query: stateMachine.displayedBuffer,
                     counts: exposureStore.counts,
                     anchor: caretRectangle(for: inputClient)
                 )
@@ -246,19 +316,61 @@ final class LinguaFlowInputController: IMKInputController {
     }
 
     private func caretRectangle(for inputClient: any IMKTextInput) -> NSRect {
-        let selectedRange = inputClient.selectedRange()
-        var lineRectangle = NSRect.zero
-        let index = selectedRange.location == NSNotFound ? 0 : selectedRange.location
-        _ = inputClient.attributes(
-            forCharacterIndex: index,
-            lineHeightRectangle: &lineRectangle
-        )
+        // IMK expects an index relative to the active marked-text session here,
+        // not the document-relative selectedRange. Passing selectedRange.location
+        // makes many web editors return an empty rectangle.
+        let displayCursor = PinyinNormalizer.compositionDisplay(
+            stateMachine.buffer,
+            rawCursor: stateMachine.cursor
+        ).cursor
+        var indexes = [displayCursor]
+        if displayCursor > 0 { indexes.append(displayCursor - 1) }
+        indexes.append(0)
 
-        if lineRectangle.isEmpty {
-            let mouse = NSEvent.mouseLocation
-            return NSRect(x: mouse.x, y: mouse.y, width: 1, height: 20)
+        for index in indexes {
+            var lineRectangle = NSRect.zero
+            _ = inputClient.attributes(
+                forCharacterIndex: index,
+                lineHeightRectangle: &lineRectangle
+            )
+            if Self.isUsableCaretRectangle(lineRectangle) {
+                lastCaretRectangle = lineRectangle
+                return lineRectangle
+            }
         }
-        return lineRectangle
+
+        // Some clients expose NSTextInputClient geometry in addition to IMKTextInput.
+        if let textClient = inputClient as? any NSTextInputClient {
+            let selectedRange = inputClient.selectedRange()
+            let range = selectedRange.location == NSNotFound
+                ? NSRange(location: 0, length: 0)
+                : NSRange(location: selectedRange.location, length: 0)
+            var actualRange = NSRange(location: NSNotFound, length: 0)
+            let rectangle = textClient.firstRect(
+                forCharacterRange: range,
+                actualRange: &actualRange
+            )
+            if Self.isUsableCaretRectangle(rectangle) {
+                lastCaretRectangle = rectangle
+                return rectangle
+            }
+        }
+
+        // Never position from the mouse. Keeping the most recent text anchor is
+        // less surprising for clients that temporarily fail to return geometry.
+        if Self.isUsableCaretRectangle(lastCaretRectangle) {
+            return lastCaretRectangle
+        }
+        let screenFrame = (NSScreen.main ?? NSScreen.screens.first)?.visibleFrame ?? .zero
+        return NSRect(x: screenFrame.midX, y: screenFrame.midY, width: 1, height: 20)
+    }
+
+    private static func isUsableCaretRectangle(_ rectangle: NSRect) -> Bool {
+        !rectangle.isEmpty
+            && rectangle.origin.x.isFinite
+            && rectangle.origin.y.isFinite
+            && rectangle.width.isFinite
+            && rectangle.height.isFinite
     }
 
     private func selectCandidate(id: String) {
@@ -266,11 +378,6 @@ final class LinguaFlowInputController: IMKInputController {
         _ = apply(stateMachine.handle(.selectCandidateID(id)), to: inputClient)
     }
 
-    private static let chinesePunctuation: [String: String] = [
-        ",": "，", ".": "。", "?": "？", "!": "！",
-        ";": "；", ":": "：", "(": "（", ")": "）",
-        "[": "【", "]": "】", "<": "《", ">": "》",
-    ]
 }
 
 private extension Collection {

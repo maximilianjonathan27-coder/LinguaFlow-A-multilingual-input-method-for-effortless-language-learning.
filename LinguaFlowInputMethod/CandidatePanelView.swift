@@ -11,6 +11,14 @@ final class CandidatePanelModel: ObservableObject {
     @Published var candidateNumberOffset = 0
     @Published var pageIndex = 0
     @Published var pageCount = 1
+
+    var panelHeight: CGFloat {
+        if isExpanded {
+            let rows = max(1, Int(ceil(Double(candidates.count) / 3.0)))
+            return CGFloat(171 + rows * 54 + max(0, rows - 1) * 8)
+        }
+        return CGFloat(max(1, candidates.count) * 40 + 10)
+    }
 }
 
 struct CandidatePanelView: View {
@@ -34,7 +42,7 @@ struct CandidatePanelView: View {
         .padding(model.isExpanded ? 7 : 5)
         .frame(
             width: model.isExpanded ? 620 : 360,
-            height: model.isExpanded ? 480 : 218
+            height: model.panelHeight
         )
         .background {
             RoundedRectangle(cornerRadius: 14, style: .continuous)

@@ -159,7 +159,7 @@ for entry in cedictEntries {
         existing.frequency = max(existing.frequency, seed?.frequency ?? 0, rime?.frequency ?? 0)
         lexemesByIdentity[identity] = existing
     } else {
-        lexemesByIdentity[identity] = LexemeRecord(id: stableID, pinyin: entry.pinyin, normalizedPinyin: entry.normalizedPinyin, pronunciationKey: entry.pronunciationKey, traditional: entry.traditional, chinese: entry.simplified, frequency: max(seed?.frequency ?? 0, rime?.frequency ?? 0), isProperNoun: entry.isProperNoun, source: "cc-cedict-v2", senses: senses)
+        lexemesByIdentity[identity] = LexemeRecord(id: stableID, pinyin: rime?.pinyin ?? entry.pinyin, normalizedPinyin: entry.normalizedPinyin, pronunciationKey: entry.pronunciationKey, traditional: entry.traditional, chinese: entry.simplified, frequency: max(seed?.frequency ?? 0, rime?.frequency ?? 0), isProperNoun: entry.isProperNoun, source: "cc-cedict-v2", senses: senses)
     }
 }
 

@@ -68,6 +68,10 @@ public struct CompositionStateMachine: Sendable {
         )
     }
 
+    public var displayedBuffer: String {
+        PinyinNormalizer.formattedComposition(buffer)
+    }
+
     public var candidates: [Candidate] {
         let start = pageIndex * pageSize
         guard start < allCandidates.count else { return [] }
@@ -117,9 +121,20 @@ public struct CompositionStateMachine: Sendable {
             guard !currentCandidates.isEmpty else {
                 return finishRawTextAndForwardIfNeeded()
             }
-            selectedIndex = (selectedIndex + delta + currentCandidates.count) % currentCandidates.count
+            let targetIndex = selectedIndex + delta
+            if targetIndex >= currentCandidates.count, pageIndex + 1 < pageCount {
+                pageIndex += 1
+                selectedIndex = 0
+            } else if targetIndex < 0, pageIndex > 0 {
+                pageIndex -= 1
+                selectedIndex = max(0, candidates.count - 1)
+            } else if pageCount == 1 {
+                selectedIndex = (targetIndex + currentCandidates.count) % currentCandidates.count
+            } else {
+                selectedIndex = min(max(0, targetIndex), currentCandidates.count - 1)
+            }
             return Transition(effects: [
-                .updateCandidates(currentCandidates, selectedIndex: selectedIndex),
+                .updateCandidates(candidates, selectedIndex: selectedIndex),
             ])
 
         case let .movePage(delta):
@@ -144,11 +159,18 @@ public struct CompositionStateMachine: Sendable {
             return finish(candidate: candidate)
 
         case let .commit(key):
-            if let candidate = candidates[safe: selectedIndex] {
-                return finish(candidate: candidate)
-            }
             guard !buffer.isEmpty else {
                 return Transition(effects: [.forwardEvent])
+            }
+
+            if key == .returnKey {
+                let rawLetters = PinyinNormalizer.normalize(buffer)
+                reset()
+                return Transition(effects: [.insertText(rawLetters), .hideCandidates])
+            }
+
+            if let candidate = candidates[safe: selectedIndex] {
+                return finish(candidate: candidate)
             }
 
             let rawText = buffer
@@ -157,7 +179,7 @@ public struct CompositionStateMachine: Sendable {
             case .space:
                 return Transition(effects: [.insertText(rawText + " "), .hideCandidates])
             case .returnKey:
-                return Transition(effects: [.insertText(rawText), .hideCandidates, .forwardEvent])
+                return Transition(effects: [.insertText(PinyinNormalizer.normalize(rawText)), .hideCandidates])
             }
 
         case let .punctuation(punctuation):
@@ -198,7 +220,8 @@ public struct CompositionStateMachine: Sendable {
 
     private func compositionUpdate() -> Transition {
         let currentCandidates = candidates
-        var effects: [Effect] = [.updateMarkedText(buffer, cursor: cursor)]
+        let display = PinyinNormalizer.compositionDisplay(buffer, rawCursor: cursor)
+        var effects: [Effect] = [.updateMarkedText(display.text, cursor: display.cursor)]
         if currentCandidates.isEmpty {
             effects.append(.hideCandidates)
         } else {
@@ -208,11 +231,59 @@ public struct CompositionStateMachine: Sendable {
     }
 
     private mutating func finish(candidate: Candidate) -> Transition {
+        if consumePartialCandidateIfPossible(candidate) {
+            let update = compositionUpdate()
+            return Transition(
+                effects: [.insertText(candidate.sourceText)] + update.effects,
+                committedCandidate: candidate
+            )
+        }
         reset()
         return Transition(
             effects: [.insertText(candidate.sourceText), .hideCandidates],
             committedCandidate: candidate
         )
+    }
+
+    private mutating func consumePartialCandidateIfPossible(_ candidate: Candidate) -> Bool {
+        let typedComponents = PinyinNormalizer.segments(for: buffer)
+        let candidateSyllables = candidate.pinyin.lowercased()
+            .split(whereSeparator: { $0.isWhitespace || $0 == "'" })
+            .map(String.init)
+        guard !candidateSyllables.isEmpty,
+              candidateSyllables.count < typedComponents.count,
+              Self.matchesPrefix(candidateSyllables, of: typedComponents)
+        else { return false }
+
+        let lettersToConsume = typedComponents
+            .prefix(candidateSyllables.count)
+            .reduce(0) { $0 + $1.count }
+        let rawCharacters = Array(buffer)
+        var rawOffset = 0
+        var consumedLetters = 0
+        while rawOffset < rawCharacters.count, consumedLetters < lettersToConsume {
+            if rawCharacters[rawOffset].isLetter { consumedLetters += 1 }
+            rawOffset += 1
+        }
+        while rawOffset < rawCharacters.count, rawCharacters[rawOffset] == "'" {
+            rawOffset += 1
+        }
+
+        buffer = String(rawCharacters.dropFirst(rawOffset))
+        cursor = buffer.count
+        selectedIndex = 0
+        pageIndex = 0
+        return !buffer.isEmpty
+    }
+
+    private static func matchesPrefix(_ candidate: [String], of typed: [String]) -> Bool {
+        let initials: Set<String> = [
+            "b", "p", "m", "f", "d", "t", "n", "l", "g", "k", "h",
+            "j", "q", "x", "zh", "ch", "sh", "r", "z", "c", "s", "y", "w",
+        ]
+        return zip(typed.prefix(candidate.count), candidate).allSatisfy { part, syllable in
+            initials.contains(part) ? syllable.hasPrefix(part) : syllable == part
+        }
     }
 
     private mutating func finishRawTextAndForwardIfNeeded() -> Transition {
