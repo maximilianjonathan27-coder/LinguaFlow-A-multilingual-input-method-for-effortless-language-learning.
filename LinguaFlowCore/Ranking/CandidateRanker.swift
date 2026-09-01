@@ -6,6 +6,37 @@ public enum CandidateRanker {
         for input: String,
         selectionCounts: [String: Int]
     ) -> [Candidate] {
+        let rimeCandidates = candidates.enumerated().filter {
+            $0.element.id.hasPrefix("rime:")
+        }
+        if !rimeCandidates.isEmpty {
+            // Rime's returned sequence is the system's initial ranking. Only a
+            // real user commit may change order within that sequence; Seen/
+            // exposure counts are deliberately unavailable to this function.
+            let learnedRimeCandidates = rimeCandidates.sorted { lhs, rhs in
+                let lhsUsage = selectionCounts[lhs.element.id, default: 0]
+                let rhsUsage = selectionCounts[rhs.element.id, default: 0]
+                if lhsUsage != rhsUsage { return lhsUsage > rhsUsage }
+                return lhs.offset < rhs.offset
+            }.map(\.element)
+            let supplementalCandidates = candidates.filter {
+                !$0.id.hasPrefix("rime:")
+            }
+            return learnedRimeCandidates + rankLegacy(
+                supplementalCandidates,
+                for: input,
+                selectionCounts: selectionCounts
+            )
+        }
+
+        return rankLegacy(candidates, for: input, selectionCounts: selectionCounts)
+    }
+
+    private static func rankLegacy(
+        _ candidates: [Candidate],
+        for input: String,
+        selectionCounts: [String: Int]
+    ) -> [Candidate] {
         let normalizedInput = PinyinNormalizer.normalize(input)
         let explicitSegments = input.lowercased()
             .split(whereSeparator: { $0.isWhitespace || $0 == "'" })

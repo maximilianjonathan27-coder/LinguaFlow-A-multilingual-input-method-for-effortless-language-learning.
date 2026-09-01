@@ -42,14 +42,14 @@ final class LexiconTests: XCTestCase {
     func testRankerPreservesLibrimeSentenceOrderForTypoRecovery() {
         let candidates = [
             Candidate(
-                id: "rime:zheggai:0:这更改",
+                id: "rime:这更改",
                 pinyin: "zhe geng gai",
                 sourceText: "这更改",
                 translation: "",
                 frequency: 2_000_000_000
             ),
             Candidate(
-                id: "rime:zheggai:1:这",
+                id: "rime:这",
                 pinyin: "zhe",
                 sourceText: "这",
                 translation: "this",
@@ -59,6 +59,36 @@ final class LexiconTests: XCTestCase {
 
         let ranked = CandidateRanker.rank(candidates, for: "zheggai", selectionCounts: [:])
         XCTAssertEqual(ranked.map(\.sourceText), ["这更改", "这"])
+    }
+
+    func testLibrimeInitialOrderStaysAheadOfSupplementalHeuristics() {
+        let candidates = [
+            Candidate(
+                id: "rime:先",
+                pinyin: "xian",
+                sourceText: "先",
+                translation: "first",
+                frequency: 1
+            ),
+            Candidate(
+                id: "supplement:西安",
+                pinyin: "xi an",
+                sourceText: "西安",
+                translation: "Xi'an",
+                frequency: 2_000_000_000
+            ),
+            Candidate(
+                id: "rime:现",
+                pinyin: "xian",
+                sourceText: "现",
+                translation: "present",
+                frequency: 1
+            ),
+        ]
+
+        let ranked = CandidateRanker.rank(candidates, for: "xian", selectionCounts: [:])
+
+        XCTAssertEqual(ranked.map(\.sourceText), ["先", "现", "西安"])
     }
 
     func testCommittedUsageCanPromoteAStableLibrimeCandidate() {

@@ -95,12 +95,12 @@ final class RimeHybridDecoder: CandidateDecoding, @unchecked Sendable {
             )
         }
 
-        // Keep the normal one-syllable results first, but inject ambiguous
-        // multi-syllable matches early enough to be visible in the compact row.
-        var rawResults = Array(primary.prefix(3))
-        rawResults.append(contentsOf: alternatives.prefix(3))
-        rawResults.append(contentsOf: primary.dropFirst(3))
-        rawResults.append(contentsOf: alternatives.dropFirst(3))
+        // The untouched primary sequence is librime's default ranking. Alternate
+        // segmentations may fill missing results, but must never be injected into
+        // or placed ahead of librime's own sequence. For example, librime already
+        // includes 西安 in the normal `xian` list at its dictionary-ranked position.
+        var rawResults = primary
+        rawResults.append(contentsOf: alternatives)
 
         let metadataByText = Dictionary(
             fallbackCandidates.map { ($0.sourceText, $0) },
