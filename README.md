@@ -2,27 +2,83 @@
 
 > **Type naturally. Learn effortlessly.**
 
-## Local macOS MVP status
+## Current macOS implementation
 
-The current local build is a native InputMethodKit input method with:
+LinguaFlow is now a native macOS InputMethodKit input source. The current
+experimental engine combines librime for Pinyin decoding with LinguaFlow's
+translation and learning interface.
 
-- a read-only SQLite lexicon containing about 108,000 Chinese words and characters;
-- continuous pinyin decoding, such as `nihao` and `woxiangqubeijing`;
-- five candidates per page, number-key selection, paging, cursor editing, and Chinese punctuation;
-- separate exposure and selection counters for future learning and ranking features;
-- English candidate definitions imported from CC-CEDICT, with manually reviewed
-  translations taking precedence for the seed records.
+Current capabilities:
 
-Build and install locally with:
+- offline librime decoding with the bundled rime-ice dictionaries;
+- continuous full Pinyin, initials, apostrophe boundaries, sentence decoding,
+  completion, and common typo tolerance;
+- a generated read-only SQLite lexicon with about 200,000 Chinese source
+  entries and 67,000 English definitions;
+- a compact five-item candidate panel and an expandable three-column panel;
+- number-key selection, arrow-key navigation, paging, cursor editing, Chinese
+  punctuation, and caret-relative panel placement;
+- English translations below Chinese candidates, with CC-CEDICT and manually
+  reviewed seed translations used as metadata;
+- separate local exposure and actual-selection counters.
+
+### Candidate ordering contract
+
+Candidate ordering is deliberately split into a system baseline and gentle
+personal adaptation:
+
+1. With no matching user history, the Chinese candidate sequence is exactly
+   the order returned by librime.
+2. SQLite frequency, translation availability, Seen count, and alternate
+   segmentation must not move supplemental candidates ahead of librime's main
+   sequence.
+3. `Seen` is only an exposure counter displayed for learning; it never affects
+   ranking.
+4. Actual committed selections may move a candidate upward, but use a
+   square-root/decaying bonus so old counts cannot overwhelm librime's common
+   order.
+5. Selection learning is keyed by normalized input plus Chinese candidate. A
+   selection of `吧` under `ba` must not promote `吧` for `bei`.
+
+The two local stores are:
+
+```text
+~/Library/Application Support/LinguaFlow/exposureCounts.v1.json
+~/Library/Application Support/LinguaFlow/selectionCounts.v1.json
+```
+
+They contain candidate identifiers and integer counters only. LinguaFlow does
+not store sentences, application names, or timestamps, and candidate lookup
+does not require a network connection.
+
+### Build, test, and install
 
 ```sh
+./script/build_and_run.sh --test
 ./script/build_and_run.sh --install-ime
 ```
 
-After installation, select **LinguaFlow** from the macOS input menu and test in
-TextEdit. The locally imported rime-ice data is GPL-3.0; review the distribution
-and licensing strategy before publishing a binary or committing the generated
-database.
+`--install-ime` builds, signs for local development, installs to
+`~/Library/Input Methods/LinguaFlow.app`, registers the input source, and
+restarts the input method service. After installation, switch once to another
+input source and back to LinguaFlow if macOS still has an older process cached.
+
+### Handoff for a new Codex task
+
+Before changing behavior in a new task:
+
+1. Read this section and `THIRD_PARTY_NOTICES.md`.
+2. Check `git status --short --branch` and recent commits; do not overwrite
+   another contributor's uncommitted work.
+3. Treat librime's returned order as the initial Chinese ranking.
+4. Keep exposure (`Seen`) separate from actual selection learning.
+5. Run the complete test suite and install locally before reporting an input
+   method fix.
+6. Do not push to GitHub unless the user explicitly requests it.
+
+The imported rime-ice data is GPL-3.0 and CC-CEDICT is CC BY-SA 4.0. Review
+the distribution, attribution, and commercial licensing strategy before
+shipping binaries or a combined dictionary database.
 
 LinguaFlow is a multilingual input method designed to turn everyday typing into effortless language learning.
 
@@ -286,12 +342,12 @@ Users can switch between profiles depending on their needs.
 The first working milestone is now a real macOS input source, not a fixed
 translation window. It is listed beside Apple's input sources and receives
 keystrokes only while the user has selected LinguaFlow from the input menu.
-The MVP contains an extensible offline SQLite lexicon seeded with five pinyin
-groups (`huiyi`, `anpai`, `yanqi`, `shenqing`, and `fangfa`). Its candidate
-panel follows the active text caret and shows Chinese, English translation,
-and Seen count. Seen records candidate exposure. Actual commits are stored
-separately as selection counts and influence ranking without replacing system
-frequency.
+The current input engine uses librime and bundled rime-ice tables for Chinese
+candidate generation, while the offline SQLite lexicon supplies translation
+metadata and supplemental fallback entries. Its candidate panel follows the
+active text caret and shows Chinese, English translation, and Seen count. Seen
+records candidate exposure. Actual commits are stored separately as selection
+counts and gently adapt librime's baseline order.
 
 ## Open and run
 
@@ -318,10 +374,12 @@ Setup app, click “安装输入法”, then go to **System Settings → Keyboar
 Input → Edit** and add LinguaFlow. No administrator password or sensitive
 privacy permission is required. Local development signing uses the first
 available Apple Development identity; Developer ID signing, DMG packaging,
-notarization, and a complete pinyin engine are later milestones.
+and notarization are later productization milestones.
 
-The editable source of the built-in dictionary lives in `LexiconSource/*.tsv`.
-`script/build_lexicon.swift` compiles those files into the read-only
+The editable LinguaFlow seed records live in `LexiconSource/*.tsv`; imported
+dictionary data and license notices live under `LexiconSource/External`, and
+the librime schema lives under `LexiconSource/Rime`.
+`script/build_lexicon.swift` compiles the applicable sources into the read-only
 `LinguaFlow.app/Contents/Resources/linguaflow.sqlite`; do not edit the database
 binary by hand.
 
@@ -1278,17 +1336,14 @@ The ultimate goal is not to make users spend more time studying.
 It is to make them **learn more from the time they already spend typing**.
 
 > **LinguaFlow — Type naturally. Learn effortlessly.**
-> """
-> from pathlib import Path
-> p = Path("/mnt/data/README.md")
-> p.write_text(content, encoding="utf-8")
-> print(p)
 
 ---
 
-# Prototype Development
+# Development notes
 
-`LinguaFlowPrototype` is the first native macOS SwiftUI visual prototype. It simulates candidate translation and Micro-Recall inside its own window; it is not yet a system input method.
+`LinguaFlowPrototype` is the setup and development host app. The actual system
+input source is the embedded `LinguaFlow.app`, built by the
+`LinguaFlowInputMethod` target.
 
 ## Requirements
 
@@ -1319,12 +1374,15 @@ The script selects the full Xcode installation locally, so it does not require a
 ./script/build_and_run.sh --verify
 ```
 
-Try these inputs in the prototype:
+Useful smoke-test inputs for the installed input method include:
 
 ```text
-huiyi · anpai · yanqi · shenqing · fangfa
+nihao · xian · xuanfu · nibangw · zheggai · ba · bei · dian
 ```
 
-Press Return to output the first candidate and increase its Seen count. You can also click any Chinese candidate to record that specific candidate.
+Space commits the selected candidate. Return commits the raw Latin composition.
+Candidate selection increments the selection store; merely showing a candidate
+increments only its exposure/Seen store.
 
-All candidate data and Seen counts stay on the Mac. This prototype makes no network requests and requests no privacy-sensitive permissions.
+All candidate data and learning counters stay on the Mac. The input method makes
+no lookup-time network requests and requests no privacy-sensitive permissions.
