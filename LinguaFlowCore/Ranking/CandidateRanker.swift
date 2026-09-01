@@ -93,6 +93,12 @@ public enum CandidateRanker {
         let syllables = candidate.pinyin.lowercased()
             .split(whereSeparator: { $0.isWhitespace || $0 == "'" })
             .map(String.init)
+        // `xian` may represent either one syllable or `xi an`. Both consume the
+        // complete composition, so neither should be penalized merely because
+        // the normalizer selected the other valid boundary.
+        if PinyinNormalizer.normalize(candidate.pinyin) == input {
+            return max(1, typed.count)
+        }
         guard !typed.isEmpty, syllables.count <= typed.count else { return 0 }
 
         let initials: Set<String> = [

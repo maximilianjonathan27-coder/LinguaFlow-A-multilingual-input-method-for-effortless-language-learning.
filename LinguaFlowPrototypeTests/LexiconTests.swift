@@ -22,6 +22,23 @@ final class LexiconTests: XCTestCase {
         )
     }
 
+    func testPinyinNormalizerExposesAmbiguousCompleteSegmentations() {
+        let segmentations = PinyinNormalizer.segmentations(for: "xian")
+
+        XCTAssertEqual(segmentations.first, ["xian"])
+        XCTAssertTrue(segmentations.contains(["xi", "an"]))
+    }
+
+    func testRankerDoesNotPenalizeAnAlternateExactSegmentation() {
+        let candidates = [
+            Candidate(id: "xian", pinyin: "xian", sourceText: "先", translation: "first", frequency: 100),
+            Candidate(id: "xi-an", pinyin: "xi an", sourceText: "西安", translation: "Xi'an", frequency: 99),
+        ]
+
+        let ranked = CandidateRanker.rank(candidates, for: "xian", selectionCounts: [:])
+        XCTAssertEqual(ranked.map(\.sourceText), ["先", "西安"])
+    }
+
     func testChinesePunctuationMappingsCoverCommonKeyboardSymbols() {
         XCTAssertEqual(PinyinNormalizer.chinesePunctuation(for: ","), "，")
         XCTAssertEqual(PinyinNormalizer.chinesePunctuation(for: "."), "。")

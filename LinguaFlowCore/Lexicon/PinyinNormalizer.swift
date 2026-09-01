@@ -155,6 +155,32 @@ public enum PinyinNormalizer {
         return covered + splitIncompleteInitials(String(characters[coveredLength...]))
     }
 
+    /// Returns complete Pinyin segmentations in preference order. Ambiguous
+    /// spellings such as `xian` therefore expose both `xian` and `xi an`, which
+    /// lets an IME offer both “先” and “西安” without requiring an apostrophe.
+    public static func segmentations(for input: String, limit: Int = 8) -> [[String]] {
+        let characters = Array(normalize(input))
+        guard !characters.isEmpty, limit > 0 else { return [] }
+
+        var paths = Array(repeating: [[String]](), count: characters.count + 1)
+        paths[0] = [[]]
+        for start in 0..<characters.count where !paths[start].isEmpty {
+            let maximumEnd = min(characters.count, start + 6)
+            for end in (start + 1)...maximumEnd {
+                let syllable = String(characters[start..<end])
+                guard commonSyllables.contains(syllable) else { continue }
+                for path in paths[start].prefix(limit) {
+                    paths[end].append(path + [syllable])
+                }
+                paths[end].sort(by: isPreferred)
+                if paths[end].count > limit {
+                    paths[end].removeLast(paths[end].count - limit)
+                }
+            }
+        }
+        return Array(paths[characters.count].sorted(by: isPreferred).prefix(limit))
+    }
+
     static func hasCompleteSyllableEnding(_ input: String) -> Bool {
         commonSyllables.contains { input.hasSuffix($0) }
     }
