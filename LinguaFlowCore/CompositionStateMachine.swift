@@ -52,10 +52,11 @@ public struct CompositionStateMachine: Sendable {
 
     public init(
         lexicon: any LexiconRepository = CandidateCatalog.repository,
+        examples: (any ExampleRepository)? = nil,
         targetLanguage: String = "en",
         selectionCounts: [String: Int] = [:]
     ) {
-        decoder = PinyinDecoder(lexicon: lexicon, targetLanguage: targetLanguage)
+        decoder = PinyinDecoder(lexicon: lexicon, examples: examples, targetLanguage: targetLanguage)
         self.selectionCounts = selectionCounts
     }
 

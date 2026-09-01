@@ -51,6 +51,7 @@ xcodebuild_common() {
 
 build_app() {
   build_lexicon
+  build_examples
   clear_signing_xattrs
   xcodebuild_common -scheme "$APP_NAME" build
   sign_bundle "$IME_BUNDLE"
@@ -59,6 +60,7 @@ build_app() {
 
 build_ime() {
   build_lexicon
+  build_examples
   clear_signing_xattrs
   xcodebuild_common -scheme LinguaFlowInputMethod build
   sign_bundle "$IME_BUNDLE"
@@ -66,6 +68,7 @@ build_ime() {
 
 test_app() {
   build_lexicon
+  build_examples
   clear_signing_xattrs
   xcodebuild_common -scheme "$APP_NAME" test
 }
@@ -95,6 +98,13 @@ build_lexicon() {
       "$ROOT_DIR/LexiconSource" \
       "$ROOT_DIR/LinguaFlowInputMethod/Resources/linguaflow.sqlite"
   xattr -c "$ROOT_DIR/LinguaFlowInputMethod/Resources/linguaflow.sqlite" || true
+}
+
+build_examples() {
+  python3 "$ROOT_DIR/script/build_examples.py" \
+    "$ROOT_DIR/LexiconSource" \
+    "$ROOT_DIR/LinguaFlowInputMethod/Resources/tatoeba_examples.sqlite"
+  xattr -c "$ROOT_DIR/LinguaFlowInputMethod/Resources/tatoeba_examples.sqlite" || true
 }
 
 open_setup_app() {
@@ -192,6 +202,7 @@ case "$MODE" in
     ;;
   --build-lexicon|build-lexicon)
     build_lexicon
+    build_examples
     ;;
   --verify|verify)
     stop_processes

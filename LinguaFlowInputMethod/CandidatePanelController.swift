@@ -10,7 +10,7 @@ final class CandidatePanelController {
     private let model = CandidatePanelModel()
     private let panel: CandidatePanel
     private let compactSize = NSSize(width: 360, height: 218)
-    private let expandedSize = NSSize(width: 620, height: 320)
+    private let expandedSize = NSSize(width: 620, height: 480)
     private let expandedPageSize = 12
     private var compactCandidates: [Candidate] = []
     private var expandedCandidates: [Candidate] = []

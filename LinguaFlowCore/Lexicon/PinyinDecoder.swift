@@ -7,10 +7,16 @@ public struct PinyinDecoder: Sendable {
     }
 
     private let lexicon: any LexiconRepository
+    private let examples: (any ExampleRepository)?
     private let targetLanguage: String
 
-    public init(lexicon: any LexiconRepository, targetLanguage: String = "en") {
+    public init(
+        lexicon: any LexiconRepository,
+        examples: (any ExampleRepository)? = nil,
+        targetLanguage: String = "en"
+    ) {
         self.lexicon = lexicon
+        self.examples = examples
         self.targetLanguage = targetLanguage
     }
 
@@ -18,26 +24,18 @@ public struct PinyinDecoder: Sendable {
         let normalized = PinyinNormalizer.normalize(input)
         guard !normalized.isEmpty, limit > 0 else { return [] }
 
-        let rawExactCandidates = lexicon.candidates(
+        let exactPhrases = examples?.phraseCandidates(
             for: normalized,
             targetLanguage: targetLanguage,
             limit: limit
-        )
-        let inferredSentences = rawExactCandidates.contains { $0.translation.isEmpty }
-            ? decodedSentences(for: normalized, limit: limit)
-            : []
-        let inferredTranslations = Dictionary(
-            inferredSentences
-                .filter { !$0.translation.isEmpty }
-                .map { ($0.sourceText, $0.translation) },
-            uniquingKeysWith: { first, _ in first }
-        )
-        let exactCandidates = rawExactCandidates.map { candidate in
-            guard candidate.translation.isEmpty,
-                  let translation = inferredTranslations[candidate.sourceText]
-            else { return candidate }
-            return candidate.replacingTranslation(translation)
-        }
+        ) ?? []
+        let lexiconCandidates = lexicon.candidates(
+            for: normalized,
+            targetLanguage: targetLanguage,
+            limit: limit
+        ).map { attachingExamples(to: $0) }
+        let rawExactCandidates = exactPhrases.isEmpty ? lexiconCandidates : exactPhrases
+        let exactCandidates = rawExactCandidates
         let fallbackCharacters = characterCandidates(
             for: normalized,
             exactCandidates: exactCandidates,
@@ -45,11 +43,7 @@ public struct PinyinDecoder: Sendable {
         )
         var results: [Candidate]
         if exactCandidates.isEmpty {
-            let decoded = inferredSentences.isEmpty
-                ? decodedSentences(for: normalized, limit: limit)
-                : inferredSentences
-            let translated = decoded.filter { !$0.translation.isEmpty }
-            results = Array((translated.isEmpty ? decoded : translated).prefix(5))
+            results = Array(decodedSentences(for: normalized, limit: limit).prefix(5))
         } else if fallbackCharacters.isEmpty {
             results = exactCandidates
         } else {
@@ -155,11 +149,16 @@ public struct PinyinDecoder: Sendable {
             let maximumEnd = min(characters.count, start + 24)
             for end in (start + 1)...maximumEnd {
                 let chunk = String(characters[start..<end])
-                let words = lexicon.candidates(
+                let phraseWords = examples?.phraseCandidates(
                     for: chunk,
                     targetLanguage: targetLanguage,
                     limit: 6
-                )
+                ) ?? []
+                let words = phraseWords.isEmpty ? lexicon.candidates(
+                    for: chunk,
+                    targetLanguage: targetLanguage,
+                    limit: 6
+                ) : phraseWords
                 guard !words.isEmpty else { continue }
                 for path in paths[start].prefix(12) {
                     for word in words {
@@ -180,14 +179,11 @@ public struct PinyinDecoder: Sendable {
             .filter { $0.candidates.count > 1 }
             .prefix(limit)
             .map { path in
-                let translations = path.candidates.map(\.translation).filter { !$0.isEmpty }
                 return Candidate(
                     id: "sentence:" + path.candidates.map(\.id).joined(separator: "+"),
                     pinyin: input,
                     sourceText: path.candidates.map(\.sourceText).joined(),
-                    translation: translations.count == path.candidates.count
-                        ? translations.joined(separator: " ")
-                        : "",
+                    translation: "",
                     frequency: Int(min(path.score, Int64(Int.max))),
                     targetLanguage: targetLanguage,
                     partOfSpeech: "sentence"
@@ -197,6 +193,27 @@ public struct PinyinDecoder: Sendable {
 
     private func hasCompletePinyinEnding(_ input: String) -> Bool {
         Self.commonSyllables.contains { input.hasSuffix($0) }
+    }
+
+    private func attachingExamples(to candidate: Candidate) -> Candidate {
+        guard candidate.examples.isEmpty,
+              let sentenceExamples = examples?.examples(for: candidate.sourceText, limit: 3),
+              !sentenceExamples.isEmpty
+        else { return candidate }
+        return Candidate(
+            id: candidate.id,
+            pinyin: candidate.pinyin,
+            sourceText: candidate.sourceText,
+            translation: candidate.translation,
+            frequency: candidate.frequency,
+            targetLanguage: candidate.targetLanguage,
+            partOfSpeech: candidate.partOfSpeech,
+            domain: candidate.domain,
+            style: candidate.style,
+            translationSenses: candidate.translationSenses,
+            isProperNoun: candidate.isProperNoun,
+            examples: sentenceExamples
+        )
     }
 
     private static let commonSyllables: Set<String> = Set("""
@@ -221,20 +238,4 @@ public struct PinyinDecoder: Sendable {
     ya yan yang yao ye yi yin ying yo yong you yu yuan yue yun
     za zai zan zang zao ze zei zen zeng zha zhai zhan zhang zhao zhe zhei zhen zheng zhi zhong zhou zhu zhua zhuai zhuan zhuang zhui zhun zhuo zi zong zou zu zuan zui zun zuo
     """.split(whereSeparator: \.isWhitespace).map(String.init))
-}
-
-private extension Candidate {
-    func replacingTranslation(_ replacement: String) -> Candidate {
-        Candidate(
-            id: id,
-            pinyin: pinyin,
-            sourceText: sourceText,
-            translation: replacement,
-            frequency: frequency,
-            targetLanguage: targetLanguage,
-            partOfSpeech: partOfSpeech,
-            domain: domain,
-            style: style
-        )
-    }
 }

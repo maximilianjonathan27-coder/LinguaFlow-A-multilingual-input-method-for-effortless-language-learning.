@@ -4,6 +4,14 @@ import SQLite3
 private let sqliteTransient = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
 
 public final class SQLiteLexicon: LexiconRepository, @unchecked Sendable {
+    private struct LexemeResult {
+        let id: String
+        let pinyin: String
+        let chinese: String
+        let frequency: Int
+        let isProperNoun: Bool
+    }
+
     public enum LexiconError: LocalizedError {
         case databaseUnavailable(String)
 
@@ -79,15 +87,14 @@ public final class SQLiteLexicon: LexiconRepository, @unchecked Sendable {
         defer { lock.unlock() }
 
         let sql = """
-            SELECT l.stable_id, l.pinyin, l.chinese, l.frequency,
-                   COALESCE(t.target_language, ?), COALESCE(t.translation, ''),
-                   t.part_of_speech, COALESCE(t.domain, 'general'),
-                   COALESCE(t.style, 'neutral')
+            SELECT l.stable_id, l.pinyin, l.chinese, l.frequency, l.is_proper_noun
             FROM lexemes AS l
-            LEFT JOIN translations AS t
-              ON t.lexeme_id = l.stable_id AND t.target_language = ?
             WHERE \(whereClause)
-            ORDER BY l.frequency DESC, l.stable_id ASC
+            ORDER BY
+                CASE WHEN l.is_proper_noun = 1 THEN l.frequency / 3 ELSE l.frequency END DESC,
+                l.is_proper_noun ASC,
+                l.meaning_rank ASC,
+                l.stable_id ASC
             LIMIT ?
             """
         var statement: OpaquePointer?
@@ -97,32 +104,90 @@ public final class SQLiteLexicon: LexiconRepository, @unchecked Sendable {
         }
         defer { sqlite3_finalize(statement) }
 
-        sqlite3_bind_text(statement, 1, targetLanguage, -1, sqliteTransient)
-        sqlite3_bind_text(statement, 2, targetLanguage, -1, sqliteTransient)
         for (offset, value) in matchValues.enumerated() {
-            sqlite3_bind_text(statement, Int32(offset + 3), value, -1, sqliteTransient)
+            sqlite3_bind_text(statement, Int32(offset + 1), value, -1, sqliteTransient)
         }
         sqlite3_bind_int(
             statement,
-            Int32(matchValues.count + 3),
+            Int32(matchValues.count + 1),
             Int32(min(limit, Int(Int32.max)))
         )
 
-        var results: [Candidate] = []
+        var lexemes: [LexemeResult] = []
         while sqlite3_step(statement) == SQLITE_ROW {
-            results.append(Candidate(
+            lexemes.append(LexemeResult(
                 id: text(statement, 0),
                 pinyin: text(statement, 1),
-                sourceText: text(statement, 2),
-                translation: text(statement, 5),
+                chinese: text(statement, 2),
                 frequency: Int(sqlite3_column_int64(statement, 3)),
-                targetLanguage: text(statement, 4),
-                partOfSpeech: optionalText(statement, 6),
-                domain: text(statement, 7),
-                style: text(statement, 8)
+                isProperNoun: sqlite3_column_int(statement, 4) != 0
             ))
         }
-        return results
+        return lexemes.map { lexeme in
+            let senses = senses(for: lexeme.id, targetLanguage: targetLanguage)
+            let primary = senses.first
+            return Candidate(
+                id: lexeme.id,
+                pinyin: lexeme.pinyin,
+                sourceText: lexeme.chinese,
+                translation: primary?.glosses.first ?? "",
+                frequency: lexeme.frequency,
+                targetLanguage: targetLanguage,
+                domain: primary?.domain ?? "general",
+                style: primary?.style ?? "neutral",
+                translationSenses: senses,
+                isProperNoun: lexeme.isProperNoun
+            )
+        }
+    }
+
+    private func senses(for lexemeID: String, targetLanguage: String) -> [TranslationSense] {
+        let sql = """
+            SELECT s.sense_id, s.sense_order, s.commonness_rank, s.usage_label,
+                   s.domain, s.style, g.gloss
+            FROM translation_senses AS s
+            JOIN translation_glosses AS g ON g.sense_id = s.sense_id
+            WHERE s.lexeme_id = ? AND s.target_language = ?
+            ORDER BY s.commonness_rank ASC, s.sense_order ASC, g.gloss_order ASC
+            """
+        var statement: OpaquePointer?
+        guard sqlite3_prepare_v2(database, sql, -1, &statement, nil) == SQLITE_OK,
+              let statement else { return [] }
+        defer { sqlite3_finalize(statement) }
+        sqlite3_bind_text(statement, 1, lexemeID, -1, sqliteTransient)
+        sqlite3_bind_text(statement, 2, targetLanguage, -1, sqliteTransient)
+
+        var order: [String] = []
+        var metadata: [String: (Int, Int, String?, String, String)] = [:]
+        var glosses: [String: [String]] = [:]
+        while sqlite3_step(statement) == SQLITE_ROW {
+            let id = text(statement, 0)
+            if metadata[id] == nil {
+                order.append(id)
+                metadata[id] = (
+                    Int(sqlite3_column_int(statement, 1)),
+                    Int(sqlite3_column_int(statement, 2)),
+                    optionalText(statement, 3),
+                    text(statement, 4),
+                    text(statement, 5)
+                )
+            }
+            glosses[id, default: []].append(text(statement, 6))
+        }
+        return order.compactMap { id in
+            guard let value = metadata[id] else { return nil }
+            return TranslationSense(
+                id: id,
+                lexemeID: lexemeID,
+                targetLanguage: targetLanguage,
+                order: value.0,
+                commonnessRank: value.1,
+                glosses: glosses[id, default: []],
+                usageLabel: value.2,
+                domain: value.3,
+                style: value.4
+            )
+        }
     }
 
     private func text(_ statement: OpaquePointer, _ column: Int32) -> String {

@@ -25,6 +25,7 @@ public enum CandidateRanker {
             : 0
         let selectionBonus = Int64(selectionCounts[candidate.id, default: 0]) * 50_000
         let phraseBonus = Int64(max(0, candidate.sourceText.count - 1)) * 100
-        return exactBonus + Int64(candidate.frequency) + selectionBonus + phraseBonus
+        let properNounPenalty: Int64 = candidate.isProperNoun ? 250_000 : 0
+        return exactBonus + Int64(candidate.frequency) + selectionBonus + phraseBonus - properNounPenalty
     }
 }

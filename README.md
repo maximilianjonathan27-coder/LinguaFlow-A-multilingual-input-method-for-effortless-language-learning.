@@ -6,12 +6,12 @@
 
 The current local build is a native InputMethodKit input method with:
 
-- a read-only SQLite lexicon containing about 108,000 Chinese words and characters;
+- a read-only SQLite V2 lexicon containing about 185,000 pronunciation-specific Chinese entries;
 - continuous pinyin decoding, such as `nihao` and `woxiangqubeijing`;
 - five candidates per page, number-key selection, paging, cursor editing, and Chinese punctuation;
 - separate exposure and selection counters for future learning and ranking features;
-- English candidate definitions imported from CC-CEDICT, with manually reviewed
-  translations taking precedence for the seed records.
+- structured English senses imported from CC-CEDICT V2, with manually reviewed
+  common meanings taking precedence for selected records.
 
 Build and install locally with:
 
@@ -320,10 +320,14 @@ privacy permission is required. Local development signing uses the first
 available Apple Development identity; Developer ID signing, DMG packaging,
 notarization, and a complete pinyin engine are later milestones.
 
-The editable source of the built-in dictionary lives in `LexiconSource/*.tsv`.
-`script/build_lexicon.swift` compiles those files into the read-only
+The editable seed source lives in `LexiconSource/*.tsv`; the complete official
+CC-CEDICT V2 export and rime-ice frequency data live in `LexiconSource/External`.
+`script/build_lexicon.swift` compiles those sources into the read-only
 `LinguaFlow.app/Contents/Resources/linguaflow.sqlite`; do not edit the database
-binary by hand.
+binary by hand. Schema V2 identifies entries by Chinese plus case-sensitive,
+tone-number pinyin and stores ordered senses and glosses separately. Generated
+multiword Chinese candidates intentionally have no English text: LinguaFlow no
+longer presents word-by-word English concatenation as a sentence translation.
 
 Learning counts are shared by the Setup app and the input method at:
 `~/Library/Application Support/LinguaFlow/exposureCounts.v1.json`. The file
@@ -331,6 +335,35 @@ contains only stable candidate IDs and integer counts; no input history,
 sentences, application names, or timestamps are stored.
 Actual selection counts use the same privacy model in
 `selectionCounts.v1.json`.
+
+## Offline phrases and examples
+
+The second-stage build adds a separate
+`LinguaFlow.app/Contents/Resources/tatoeba_examples.sqlite` database. It is
+generated locally from the vendored Tatoeba Chinese-English Vocabulary MDX and
+contains phrase records, example sentences, and term-to-example indexes. It
+does not replace CC-CEDICT word senses and contains no user input or history.
+
+Exact reviewed phrases take precedence over word segmentation. For example,
+`shenqingdaxue` resolves directly to `申请大学 / apply to a university` instead
+of combining `申请 + 大学`. The compact candidate panel remains unchanged. In
+the expanded panel, the selected candidate has a Vocabulary Card with up to two
+offline examples.
+
+Editable phrase data lives in:
+
+- `LexiconSource/phrases.tsv`
+- `LexiconSource/phrase_examples.tsv`
+
+Rebuild both SQLite databases with:
+
+```bash
+./script/build_and_run.sh --build-lexicon
+```
+
+The included MDX snapshot was compiled in December 2020. Tatoeba examples are
+used as sentence evidence, not as automatically inferred phrase translations;
+phrase translations in `phrases.tsv` are separately reviewed.
 
 ---
 

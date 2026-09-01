@@ -34,7 +34,7 @@ struct CandidatePanelView: View {
         .padding(model.isExpanded ? 7 : 5)
         .frame(
             width: model.isExpanded ? 620 : 360,
-            height: model.isExpanded ? 320 : 218
+            height: model.isExpanded ? 480 : 218
         )
         .background {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
@@ -103,6 +103,8 @@ struct CandidatePanelView: View {
                 }
             }
 
+            vocabularyCard
+
             HStack {
                 Text("− 上一行   = 下一行")
                     .font(.caption2)
@@ -114,6 +116,46 @@ struct CandidatePanelView: View {
             }
             .padding(.horizontal, 4)
             .frame(height: 18)
+        }
+    }
+
+    private var vocabularyCard: some View {
+        let candidate = model.candidates[safe: model.selectedIndex]
+        return VStack(alignment: .leading, spacing: 5) {
+            HStack {
+                Label("Vocabulary Card", systemImage: "text.book.closed")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                Spacer()
+                if let candidate {
+                    Text(candidate.sourceText)
+                        .font(.caption.weight(.bold))
+                }
+            }
+            if let candidate, !candidate.examples.isEmpty {
+                ForEach(candidate.examples.prefix(2)) { example in
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(example.chinese)
+                            .font(.caption)
+                            .lineLimit(1)
+                        Text(example.english)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+                }
+            } else {
+                Text("暂无离线例句")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity, minHeight: 92, alignment: .topLeading)
+        .background {
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(Color(nsColor: .controlBackgroundColor).opacity(0.34))
         }
     }
 
@@ -207,5 +249,11 @@ struct CandidatePanelView: View {
     private func accessibilityLabel(_ candidate: Candidate, index: Int) -> String {
         let number = model.isExpanded ? index % 3 + 1 : index + 1
         return "候选 \(number)，\(candidate.sourceText)，\(candidate.translation.isEmpty ? "暂无翻译" : candidate.translation)，Seen \(model.counts[candidate.id, default: 0]) 次"
+    }
+}
+
+private extension Collection {
+    subscript(safe index: Index) -> Element? {
+        indices.contains(index) ? self[index] : nil
     }
 }

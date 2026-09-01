@@ -1,0 +1,11 @@
+stable_id	pinyin	chinese	english	priority
+phrase.apply-university	shen qing da xue	申请大学	apply to a university	1000
+phrase.submit-application	ti jiao shen qing	提交申请	submit an application	1000
+phrase.apply-loan	shen qing dai kuan	申请贷款	apply for a loan	1000
+phrase.approve-application	pi zhun shen qing	批准申请	approve an application	1000
+phrase.arrange-meeting	an pai hui yi	安排会议	schedule a meeting	900
+phrase.arrange-time	an pai shi jian	安排时间	arrange a time	900
+phrase.postpone-meeting	yan qi hui yi	延期会议	postpone the meeting	900
+phrase.defer-submission	yan qi ti jiao	延期提交	defer submission	900
+phrase.this-approach	zhe ge fang fa	这个方法	this approach	900
+phrase.learning-method	xue xi fang fa	学习方法	learning method	900

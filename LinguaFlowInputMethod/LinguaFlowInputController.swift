@@ -20,7 +20,13 @@ final class LinguaFlowInputController: IMKInputController {
     override init!(server: IMKServer!, delegate: Any!, client inputClient: Any!) {
         if let databaseURL = Bundle.main.url(forResource: "linguaflow", withExtension: "sqlite"),
            let sqliteLexicon = try? SQLiteLexicon(databaseURL: databaseURL) {
-            stateMachine = CompositionStateMachine(lexicon: sqliteLexicon)
+            let exampleRepository = Bundle.main
+                .url(forResource: "tatoeba_examples", withExtension: "sqlite")
+                .flatMap { try? SQLiteExampleRepository(databaseURL: $0) }
+            stateMachine = CompositionStateMachine(
+                lexicon: sqliteLexicon,
+                examples: exampleRepository
+            )
         } else {
             stateMachine = CompositionStateMachine()
         }
