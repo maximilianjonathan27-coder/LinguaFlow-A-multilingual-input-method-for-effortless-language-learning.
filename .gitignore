@@ -1,0 +1,9 @@
+.DS_Store
+.build/
+DerivedData/
+build/
+*.xcuserstate
+xcuserdata/
+*.xccheckout
+*.xcscmblueprint
+LinguaFlowInputMethod/Resources/.linguaflow-*.sqlite

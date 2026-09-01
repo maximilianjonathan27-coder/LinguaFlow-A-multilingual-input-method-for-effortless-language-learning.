@@ -2,6 +2,28 @@
 
 > **Type naturally. Learn effortlessly.**
 
+## Local macOS MVP status
+
+The current local build is a native InputMethodKit input method with:
+
+- a read-only SQLite V2 lexicon containing about 185,000 pronunciation-specific Chinese entries;
+- continuous pinyin decoding, such as `nihao` and `woxiangqubeijing`;
+- five candidates per page, number-key selection, paging, cursor editing, and Chinese punctuation;
+- separate exposure and selection counters for future learning and ranking features;
+- structured English senses imported from CC-CEDICT V2, with manually reviewed
+  common meanings taking precedence for selected records.
+
+Build and install locally with:
+
+```sh
+./script/build_and_run.sh --install-ime
+```
+
+After installation, select **LinguaFlow** from the macOS input menu and test in
+TextEdit. The locally imported rime-ice data is GPL-3.0; review the distribution
+and licensing strategy before publishing a binary or committing the generated
+database.
+
 LinguaFlow is a multilingual input method designed to turn everyday typing into effortless language learning.
 
 Instead of asking users to open a separate translator, LinguaFlow brings **real-time translations directly into the input candidate interface**. As you type, relevant translations appear alongside your input, allowing language exposure to happen naturally within the workflow.
@@ -256,6 +278,92 @@ English → Spanish
 ```
 
 Users can switch between profiles depending on their needs.
+
+---
+
+# Native macOS Input Method MVP
+
+The first working milestone is now a real macOS input source, not a fixed
+translation window. It is listed beside Apple's input sources and receives
+keystrokes only while the user has selected LinguaFlow from the input menu.
+The MVP contains an extensible offline SQLite lexicon seeded with five pinyin
+groups (`huiyi`, `anpai`, `yanqi`, `shenqing`, and `fangfa`). Its candidate
+panel follows the active text caret and shows Chinese, English translation,
+and Seen count. Seen records candidate exposure. Actual commits are stored
+separately as selection counts and influence ranking without replacing system
+frequency.
+
+## Open and run
+
+Open `LinguaFlowPrototype.xcodeproj` in Xcode. The `LinguaFlowPrototype` scheme
+builds the `LinguaFlow Setup` app and embeds the signed `LinguaFlow.app`
+input-method bundle. The `LinguaFlowInputMethod` scheme builds the input source
+by itself; it is a background app and is not intended to show a window.
+
+The project-local script is the recommended path because it selects the
+installed Xcode toolchain without changing `xcode-select`:
+
+```bash
+./script/build_and_run.sh
+./script/build_and_run.sh --test
+./script/build_and_run.sh --build-lexicon
+./script/build_and_run.sh --build-ime
+./script/build_and_run.sh --install-ime
+./script/build_and_run.sh --verify-ime
+./script/build_and_run.sh --verify
+```
+
+`--install-ime` installs to `~/Library/Input Methods/LinguaFlow.app`. Open the
+Setup app, click “安装输入法”, then go to **System Settings → Keyboard → Text
+Input → Edit** and add LinguaFlow. No administrator password or sensitive
+privacy permission is required. Local development signing uses the first
+available Apple Development identity; Developer ID signing, DMG packaging,
+notarization, and a complete pinyin engine are later milestones.
+
+The editable seed source lives in `LexiconSource/*.tsv`; the complete official
+CC-CEDICT V2 export and rime-ice frequency data live in `LexiconSource/External`.
+`script/build_lexicon.swift` compiles those sources into the read-only
+`LinguaFlow.app/Contents/Resources/linguaflow.sqlite`; do not edit the database
+binary by hand. Schema V2 identifies entries by Chinese plus case-sensitive,
+tone-number pinyin and stores ordered senses and glosses separately. Generated
+multiword Chinese candidates intentionally have no English text: LinguaFlow no
+longer presents word-by-word English concatenation as a sentence translation.
+
+Learning counts are shared by the Setup app and the input method at:
+`~/Library/Application Support/LinguaFlow/exposureCounts.v1.json`. The file
+contains only stable candidate IDs and integer counts; no input history,
+sentences, application names, or timestamps are stored.
+Actual selection counts use the same privacy model in
+`selectionCounts.v1.json`.
+
+## Offline phrases and examples
+
+The second-stage build adds a separate
+`LinguaFlow.app/Contents/Resources/tatoeba_examples.sqlite` database. It is
+generated locally from the vendored Tatoeba Chinese-English Vocabulary MDX and
+contains phrase records, example sentences, and term-to-example indexes. It
+does not replace CC-CEDICT word senses and contains no user input or history.
+
+Exact reviewed phrases take precedence over word segmentation. For example,
+`shenqingdaxue` resolves directly to `申请大学 / apply to a university` instead
+of combining `申请 + 大学`. The compact candidate panel remains unchanged. In
+the expanded panel, the selected candidate has a Vocabulary Card with up to two
+offline examples.
+
+Editable phrase data lives in:
+
+- `LexiconSource/phrases.tsv`
+- `LexiconSource/phrase_examples.tsv`
+
+Rebuild both SQLite databases with:
+
+```bash
+./script/build_and_run.sh --build-lexicon
+```
+
+The included MDX snapshot was compiled in December 2020. Tatoeba examples are
+used as sentence evidence, not as automatically inferred phrase translations;
+phrase translations in `phrases.tsv` are separately reviewed.
 
 ---
 
@@ -1208,3 +1316,48 @@ It is to make them **learn more from the time they already spend typing**.
 > p = Path("/mnt/data/README.md")
 > p.write_text(content, encoding="utf-8")
 > print(p)
+
+---
+
+# Prototype Development
+
+`LinguaFlowPrototype` is the first native macOS SwiftUI visual prototype. It simulates candidate translation and Micro-Recall inside its own window; it is not yet a system input method.
+
+## Requirements
+
+- macOS 14 or later
+- Xcode 26.6 installed at `/Applications/Xcode.app`
+- No paid Apple Developer account is required for local development
+
+## Open in Xcode
+
+```bash
+open LinguaFlowPrototype.xcodeproj
+```
+
+Choose the `LinguaFlowPrototype` scheme and `My Mac`, then press the Run button.
+
+## Build and run
+
+```bash
+./script/build_and_run.sh
+```
+
+The script selects the full Xcode installation locally, so it does not require a global `xcode-select` change.
+
+## Test
+
+```bash
+./script/build_and_run.sh --test
+./script/build_and_run.sh --verify
+```
+
+Try these inputs in the prototype:
+
+```text
+huiyi · anpai · yanqi · shenqing · fangfa
+```
+
+Press Return to output the first candidate and increase its Seen count. You can also click any Chinese candidate to record that specific candidate.
+
+All candidate data and Seen counts stay on the Mac. This prototype makes no network requests and requests no privacy-sensitive permissions.

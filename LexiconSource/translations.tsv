@@ -1,0 +1,17 @@
+stable_id	target_language	translation	part_of_speech	domain	style
+huiyi.meeting	en	meeting	noun	general	neutral
+huiyi.memory	en	memory	noun	general	neutral
+huiyi.grasp	en	grasp the meaning	verb	general	neutral
+anpai.arrange	en	arrange	verb	general	neutral
+anpai.meeting	en	schedule a meeting	phrase	work	neutral
+anpai.time	en	arrange a time	phrase	general	neutral
+yanqi.postpone	en	postpone	verb	general	neutral
+yanqi.meeting	en	postpone the meeting	phrase	work	neutral
+yanqi.submission	en	defer submission	phrase	work	neutral
+shenqing.apply	en	apply	verb	general	neutral
+shenqing.university	en	apply to a university	phrase	education	neutral
+shenqing.submit	en	submit an application	phrase	work	neutral
+fangfa.method	en	method	noun	general	neutral
+fangfa.approach	en	this approach	phrase	general	neutral
+fangfa.learning	en	learning method	phrase	education	neutral
+xuanfu.float	en	float; suspend	verb	general	neutral
