@@ -50,6 +50,14 @@ final class CompositionStateMachineTests: XCTestCase {
         XCTAssertEqual(transition.effects, [.insertText("安排时间"), .hideCandidates])
     }
 
+    func testExpandedPanelCanSelectCandidateByStableID() {
+        var machine = makeMachine(with: "anpai")
+        let transition = machine.handle(.selectCandidateID("anpai.time"))
+
+        XCTAssertEqual(transition.committedCandidate?.sourceText, "安排时间")
+        XCTAssertEqual(transition.effects, [.insertText("安排时间"), .hideCandidates])
+    }
+
     func testUnknownInputSpaceOutputsRawTextAndSpace() {
         var machine = makeMachine(with: "hello")
         let transition = machine.handle(.commit(.space))

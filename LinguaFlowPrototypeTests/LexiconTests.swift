@@ -51,6 +51,31 @@ final class LexiconTests: XCTestCase {
         XCTAssertTrue(results.contains { $0.sourceText == "我想去北京" })
     }
 
+    func testDecoderKeepsCommonWordsBeforeSingleCharacterFallbacks() throws {
+        let decoder = PinyinDecoder(lexicon: try SQLiteLexicon(databaseURL: databaseURL))
+
+        for input in ["nihao", "huiyi", "anpai", "shenqing", "nide", "wode"] {
+            let results = decoder.candidates(for: input, limit: 40)
+            let firstCharacterIndex = try XCTUnwrap(
+                results.firstIndex { $0.sourceText.count == 1 },
+                "\(input) should include single-character fallbacks"
+            )
+
+            XCTAssertTrue(
+                results[firstCharacterIndex...].allSatisfy { $0.sourceText.count == 1 },
+                "\(input) should not contain generated low-frequency words after character fallbacks"
+            )
+            XCTAssertFalse(
+                results.contains { $0.id.hasPrefix("sentence:") },
+                "\(input) already has complete words and should not include mechanical sentence combinations"
+            )
+            XCTAssertTrue(
+                results.prefix(12).allSatisfy { !$0.translation.isEmpty },
+                "\(input) should prioritize candidates with English definitions"
+            )
+        }
+    }
+
     @MainActor
     func testSelectionCountsPersistSeparately() throws {
         let directory = FileManager.default.temporaryDirectory

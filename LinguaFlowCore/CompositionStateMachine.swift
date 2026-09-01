@@ -13,6 +13,7 @@ public struct CompositionStateMachine: Sendable {
         case moveSelection(Int)
         case movePage(Int)
         case selectCandidate(Int)
+        case selectCandidateID(String)
         case commit(CommitKey)
         case punctuation(String)
         case cancel
@@ -134,6 +135,12 @@ public struct CompositionStateMachine: Sendable {
                 return Transition(effects: [.forwardEvent])
             }
             return finish(candidate: currentCandidates[index])
+
+        case let .selectCandidateID(id):
+            guard let candidate = allCandidates.first(where: { $0.id == id }) else {
+                return Transition(effects: [.forwardEvent])
+            }
+            return finish(candidate: candidate)
 
         case let .commit(key):
             if let candidate = candidates[safe: selectedIndex] {

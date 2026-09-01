@@ -45,22 +45,46 @@ xcodebuild_common() {
     -derivedDataPath "$DERIVED_DATA" \
     CODE_SIGN_IDENTITY="$SIGNING_IDENTITY" \
     CODE_SIGN_STYLE=Manual \
+    CODE_SIGNING_ALLOWED=NO \
     "$@"
 }
 
 build_app() {
   build_lexicon
+  clear_signing_xattrs
   xcodebuild_common -scheme "$APP_NAME" build
+  sign_bundle "$IME_BUNDLE"
+  sign_bundle "$APP_BUNDLE"
 }
 
 build_ime() {
   build_lexicon
+  clear_signing_xattrs
   xcodebuild_common -scheme LinguaFlowInputMethod build
+  sign_bundle "$IME_BUNDLE"
 }
 
 test_app() {
   build_lexicon
+  clear_signing_xattrs
   xcodebuild_common -scheme "$APP_NAME" test
+}
+
+clear_signing_xattrs() {
+  xattr -cr "$ROOT_DIR/LinguaFlowInputMethod/Resources" || true
+  xattr -c "$ROOT_DIR/LinguaFlowInputMethod/Info.plist" || true
+  if [[ -d "$IME_BUNDLE" ]]; then
+    xattr -cr "$IME_BUNDLE" || true
+  fi
+}
+
+sign_bundle() {
+  local bundle="$1"
+  [[ -d "$bundle" ]] || return 0
+  xattr -cr "$bundle" || true
+  xattr -d com.apple.FinderInfo "$bundle" 2>/dev/null || true
+  xattr -d 'com.apple.fileprovider.fpfs#P' "$bundle" 2>/dev/null || true
+  codesign --force --deep --sign "$SIGNING_IDENTITY" "$bundle"
 }
 
 build_lexicon() {
@@ -70,6 +94,7 @@ build_lexicon() {
     xcrun swift "$ROOT_DIR/script/build_lexicon.swift" \
       "$ROOT_DIR/LexiconSource" \
       "$ROOT_DIR/LinguaFlowInputMethod/Resources/linguaflow.sqlite"
+  xattr -c "$ROOT_DIR/LinguaFlowInputMethod/Resources/linguaflow.sqlite" || true
 }
 
 open_setup_app() {
@@ -110,6 +135,14 @@ install_ime_from_build() {
     return 1
   fi
   rm -rf "$backup"
+  xattr -cr "$INSTALLED_IME" || true
+  xattr -d com.apple.FinderInfo "$INSTALLED_IME" 2>/dev/null || true
+  xattr -d 'com.apple.fileprovider.fpfs#P' "$INSTALLED_IME" 2>/dev/null || true
+
+  # macOS may relaunch an active input method while the new bundle is still
+  # building. Stop it again after the atomic replacement so the next launch
+  # maps the newly installed executable instead of keeping the old image alive.
+  pkill -x "$IME_NAME" >/dev/null 2>&1 || true
 
   local lsregister
   lsregister="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"

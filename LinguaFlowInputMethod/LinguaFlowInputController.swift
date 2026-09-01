@@ -11,8 +11,8 @@ final class LinguaFlowInputController: IMKInputController {
     private var lastExposedCandidateIDs: [String] = []
     private lazy var candidatePanel: CandidatePanelController = {
         let controller = CandidatePanelController()
-        controller.onSelect = { [weak self] index in
-            self?.selectCandidate(at: index)
+        controller.onSelect = { [weak self] candidateID in
+            self?.selectCandidate(id: candidateID)
         }
         return controller
     }()
@@ -41,6 +41,59 @@ final class LinguaFlowInputController: IMKInputController {
         if stateMachine.buffer.isEmpty,
            event.modifierFlags.contains(.capsLock) || event.modifierFlags.contains(.shift) {
             return false
+        }
+
+        if event.keyCode == 124,
+           !stateMachine.buffer.isEmpty,
+           stateMachine.cursor == stateMachine.buffer.count,
+           !stateMachine.allCandidates.isEmpty,
+           !candidatePanel.isExpanded {
+            candidatePanel.setExpanded(true)
+            return true
+        }
+
+        let keyText = event.charactersIgnoringModifiers ?? ""
+        if keyText == "=", !stateMachine.buffer.isEmpty, !stateMachine.allCandidates.isEmpty {
+            if candidatePanel.isExpanded {
+                candidatePanel.moveExpandedRow(1)
+            } else {
+                candidatePanel.setExpanded(true)
+            }
+            return true
+        }
+
+        if keyText == "-", candidatePanel.isExpanded {
+            candidatePanel.moveExpandedRow(-1)
+            return true
+        }
+
+        if candidatePanel.isExpanded {
+            if event.keyCode == 123 {
+                candidatePanel.moveExpandedColumn(-1)
+                return true
+            }
+            if event.keyCode == 124 {
+                candidatePanel.moveExpandedColumn(1)
+                return true
+            }
+            if event.keyCode == 125 {
+                candidatePanel.moveExpandedRow(1)
+                return true
+            }
+            if event.keyCode == 126 {
+                candidatePanel.moveExpandedRow(-1)
+                return true
+            }
+            if (event.keyCode == 36 || event.keyCode == 49),
+               let candidateID = candidatePanel.highlightedCandidateID {
+                selectCandidate(id: candidateID)
+                return true
+            }
+            if let number = Int(keyText), (1...3).contains(number),
+               let candidateID = candidatePanel.candidateID(inColumn: number - 1) {
+                selectCandidate(id: candidateID)
+                return true
+            }
         }
 
         guard let action = action(for: event) else {
@@ -155,8 +208,10 @@ final class LinguaFlowInputController: IMKInputController {
                     lastExposedCandidateIDs = candidateIDs
                 }
                 candidatePanel.show(
-                    candidates: candidates,
-                    selectedIndex: selectedIndex,
+                    compactCandidates: candidates,
+                    expandedCandidates: stateMachine.allCandidates,
+                    selectedCandidateID: candidates[safe: selectedIndex]?.id,
+                    query: stateMachine.buffer,
                     counts: exposureStore.counts,
                     anchor: caretRectangle(for: inputClient)
                 )
@@ -200,9 +255,9 @@ final class LinguaFlowInputController: IMKInputController {
         return lineRectangle
     }
 
-    private func selectCandidate(at index: Int) {
+    private func selectCandidate(id: String) {
         guard let inputClient = client() else { return }
-        _ = apply(stateMachine.handle(.selectCandidate(index)), to: inputClient)
+        _ = apply(stateMachine.handle(.selectCandidateID(id)), to: inputClient)
     }
 
     private static let chinesePunctuation: [String: String] = [
@@ -210,4 +265,10 @@ final class LinguaFlowInputController: IMKInputController {
         ";": "；", ":": "：", "(": "（", ")": "）",
         "[": "【", "]": "】", "<": "《", ">": "》",
     ]
+}
+
+private extension Collection {
+    subscript(safe index: Index) -> Element? {
+        indices.contains(index) ? self[index] : nil
+    }
 }

@@ -18,12 +18,54 @@ public struct PinyinDecoder: Sendable {
         let normalized = PinyinNormalizer.normalize(input)
         guard !normalized.isEmpty, limit > 0 else { return [] }
 
-        var results = lexicon.candidates(
+        let rawExactCandidates = lexicon.candidates(
             for: normalized,
             targetLanguage: targetLanguage,
             limit: limit
         )
-        results.append(contentsOf: decodedSentences(for: normalized, limit: limit))
+        let inferredSentences = rawExactCandidates.contains { $0.translation.isEmpty }
+            ? decodedSentences(for: normalized, limit: limit)
+            : []
+        let inferredTranslations = Dictionary(
+            inferredSentences
+                .filter { !$0.translation.isEmpty }
+                .map { ($0.sourceText, $0.translation) },
+            uniquingKeysWith: { first, _ in first }
+        )
+        let exactCandidates = rawExactCandidates.map { candidate in
+            guard candidate.translation.isEmpty,
+                  let translation = inferredTranslations[candidate.sourceText]
+            else { return candidate }
+            return candidate.replacingTranslation(translation)
+        }
+        let fallbackCharacters = characterCandidates(
+            for: normalized,
+            exactCandidates: exactCandidates,
+            limit: limit
+        )
+        var results: [Candidate]
+        if exactCandidates.isEmpty {
+            let decoded = inferredSentences.isEmpty
+                ? decodedSentences(for: normalized, limit: limit)
+                : inferredSentences
+            let translated = decoded.filter { !$0.translation.isEmpty }
+            results = Array((translated.isEmpty ? decoded : translated).prefix(5))
+        } else if fallbackCharacters.isEmpty {
+            results = exactCandidates
+        } else {
+            let commonWords = exactCandidates.filter {
+                !$0.translation.isEmpty
+                    && ($0.sourceText.count == 1 || $0.frequency >= 10_000)
+            }
+            let translatedExact = exactCandidates.filter { !$0.translation.isEmpty }
+            if !commonWords.isEmpty {
+                results = Array(commonWords.prefix(5))
+            } else if !translatedExact.isEmpty {
+                results = Array(translatedExact.prefix(5))
+            } else {
+                results = Array(exactCandidates.prefix(1))
+            }
+        }
 
         if results.isEmpty || !hasCompletePinyinEnding(normalized) {
             results.append(contentsOf: lexicon.prefixCandidates(
@@ -33,15 +75,74 @@ public struct PinyinDecoder: Sendable {
             ))
         }
 
+        results.append(contentsOf: fallbackCharacters)
+
         var seenTexts: Set<String> = []
         return results
-            .sorted {
-                if $0.frequency != $1.frequency { return $0.frequency > $1.frequency }
-                return $0.sourceText.count > $1.sourceText.count
-            }
             .filter { seenTexts.insert($0.sourceText).inserted }
             .prefix(limit)
             .map { $0 }
+    }
+
+    private func characterCandidates(
+        for input: String,
+        exactCandidates: [Candidate],
+        limit: Int
+    ) -> [Candidate] {
+        let hintedSyllables = exactCandidates.first?.pinyin
+            .split(whereSeparator: { $0 == " " || $0 == "'" })
+            .map(String.init) ?? []
+        let syllables: [String]
+        if hintedSyllables.count > 1,
+           hintedSyllables.joined() == input {
+            syllables = hintedSyllables
+        } else {
+            syllables = syllableSegments(for: input) ?? []
+        }
+
+        guard syllables.count > 1 else { return [] }
+        var characters: [Candidate] = []
+        var seenTexts: Set<String> = []
+        for syllable in syllables {
+            let matches = lexicon.candidates(
+                for: syllable,
+                targetLanguage: targetLanguage,
+                limit: min(24, limit)
+            )
+            let translatedMatches = matches.filter {
+                $0.sourceText.count == 1 && !$0.translation.isEmpty
+            }
+            let usableMatches = translatedMatches.isEmpty
+                ? matches.filter { $0.sourceText.count == 1 }
+                : translatedMatches
+            for candidate in usableMatches {
+                if seenTexts.insert(candidate.sourceText).inserted {
+                    characters.append(candidate)
+                }
+            }
+        }
+        return Array(characters.prefix(limit))
+    }
+
+    private func syllableSegments(for input: String) -> [String]? {
+        let characters = Array(input)
+        guard !characters.isEmpty else { return nil }
+        var paths = Array<[String]?>(repeating: nil, count: characters.count + 1)
+        paths[0] = []
+
+        for start in 0..<characters.count {
+            guard let path = paths[start] else { continue }
+            let maximumEnd = min(characters.count, start + 6)
+            for end in (start + 1)...maximumEnd {
+                let syllable = String(characters[start..<end])
+                guard Self.commonSyllables.contains(syllable) else { continue }
+                let candidate = path + [syllable]
+                if paths[end] == nil || candidate.count < paths[end]!.count {
+                    paths[end] = candidate
+                }
+            }
+        }
+        return paths[characters.count]
     }
 
     private func decodedSentences(for input: String, limit: Int) -> [Candidate] {
@@ -120,4 +221,20 @@ public struct PinyinDecoder: Sendable {
     ya yan yang yao ye yi yin ying yo yong you yu yuan yue yun
     za zai zan zang zao ze zei zen zeng zha zhai zhan zhang zhao zhe zhei zhen zheng zhi zhong zhou zhu zhua zhuai zhuan zhuang zhui zhun zhuo zi zong zou zu zuan zui zun zuo
     """.split(whereSeparator: \.isWhitespace).map(String.init))
+}
+
+private extension Candidate {
+    func replacingTranslation(_ replacement: String) -> Candidate {
+        Candidate(
+            id: id,
+            pinyin: pinyin,
+            sourceText: sourceText,
+            translation: replacement,
+            frequency: frequency,
+            targetLanguage: targetLanguage,
+            partOfSpeech: partOfSpeech,
+            domain: domain,
+            style: style
+        )
+    }
 }
