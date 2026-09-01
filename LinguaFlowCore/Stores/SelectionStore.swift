@@ -28,7 +28,13 @@ public final class SelectionStore {
 
     public func refresh() {
         do {
-            counts = try persistence.read()
+            let storedCounts = try persistence.read()
+            let migratedCounts = Self.migrateLegacyRimeIDs(in: storedCounts)
+            if migratedCounts == storedCounts {
+                counts = storedCounts
+            } else {
+                counts = try persistence.update { $0 = migratedCounts }
+            }
             lastErrorDescription = nil
         } catch {
             counts = [:]
@@ -46,6 +52,25 @@ public final class SelectionStore {
             lastErrorDescription = error.localizedDescription
             return false
         }
+    }
+
+    private static func migrateLegacyRimeIDs(in storedCounts: [String: Int]) -> [String: Int] {
+        var migrated: [String: Int] = [:]
+        for (candidateID, count) in storedCounts {
+            let components = candidateID.split(
+                separator: ":",
+                maxSplits: 3,
+                omittingEmptySubsequences: false
+            )
+            let stableID: String
+            if components.count == 4, components[0] == "rime" {
+                stableID = "rime:\(components[3])"
+            } else {
+                stableID = candidateID
+            }
+            migrated[stableID, default: 0] += count
+        }
+        return migrated
     }
 }
 

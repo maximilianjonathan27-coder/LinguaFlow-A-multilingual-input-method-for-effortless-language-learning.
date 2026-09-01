@@ -61,6 +61,33 @@ final class LexiconTests: XCTestCase {
         XCTAssertEqual(ranked.map(\.sourceText), ["这更改", "这"])
     }
 
+    func testCommittedUsageCanPromoteAStableLibrimeCandidate() {
+        let candidates = [
+            Candidate(
+                id: "rime:把",
+                pinyin: "ba",
+                sourceText: "把",
+                translation: "to hold",
+                frequency: 2_000_000_000
+            ),
+            Candidate(
+                id: "rime:吧",
+                pinyin: "ba",
+                sourceText: "吧",
+                translation: "modal particle",
+                frequency: 1_999_999_999
+            ),
+        ]
+
+        let ranked = CandidateRanker.rank(
+            candidates,
+            for: "ba",
+            selectionCounts: ["rime:吧": 1]
+        )
+
+        XCTAssertEqual(ranked.first?.sourceText, "吧")
+    }
+
     func testChinesePunctuationMappingsCoverCommonKeyboardSymbols() {
         XCTAssertEqual(PinyinNormalizer.chinesePunctuation(for: ","), "，")
         XCTAssertEqual(PinyinNormalizer.chinesePunctuation(for: "."), "。")

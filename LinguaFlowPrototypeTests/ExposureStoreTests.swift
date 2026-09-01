@@ -102,6 +102,25 @@ final class ExposureStoreTests: XCTestCase {
         XCTAssertEqual(restored.count(for: candidate), 4)
     }
 
+    func testSelectionStoreMigratesPositionDependentRimeIDs() throws {
+        let fileURL = makeFileURL()
+        try FileManager.default.createDirectory(
+            at: fileURL.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+        let legacyCounts = [
+            "rime:m:0:吗": 2,
+            "rime:ma:1:吗": 3,
+        ]
+        try JSONEncoder().encode(legacyCounts).write(to: fileURL)
+
+        let store = SelectionStore(fileURL: fileURL)
+
+        XCTAssertEqual(store.counts["rime:吗"], 5)
+        XCTAssertNil(store.counts["rime:m:0:吗"])
+        XCTAssertNil(store.counts["rime:ma:1:吗"])
+    }
+
     private func makeFileURL() -> URL {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("LinguaFlowTests-\(UUID().uuidString)", isDirectory: true)

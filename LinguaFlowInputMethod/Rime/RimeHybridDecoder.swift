@@ -115,7 +115,10 @@ final class RimeHybridDecoder: CandidateDecoding, @unchecked Sendable {
             guard !text.isEmpty, seenText.insert(text).inserted else { continue }
             let metadata = metadataByText[text]
             results.append(Candidate(
-                id: "rime:\(normalized):\(index):\(text)",
+                // Candidate identity must not depend on the current spelling or
+                // list position. A stable ID lets SelectionStore learn that the
+                // user chose the same word across queries and Rime rerankings.
+                id: "rime:\(text)",
                 pinyin: candidatePinyin(
                     comment: item.comment,
                     sourceText: text,
