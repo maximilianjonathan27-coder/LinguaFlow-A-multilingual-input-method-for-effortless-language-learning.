@@ -16,6 +16,9 @@ public final class SQLiteExampleRepository: ExampleRepository, @unchecked Sendab
 
     private let database: OpaquePointer
     private let lock = NSLock()
+    private var phraseCache: [String: [Candidate]] = [:]
+    private var exampleCache: [String: [ExampleSentence]] = [:]
+    private let maximumCacheEntries = 1_024
 
     public init(databaseURL: URL) throws {
         var database: OpaquePointer?
@@ -34,6 +37,8 @@ public final class SQLiteExampleRepository: ExampleRepository, @unchecked Sendab
         guard !normalized.isEmpty, targetLanguage == "en", limit > 0 else { return [] }
         lock.lock()
         defer { lock.unlock() }
+        let cacheKey = "\(normalized)|\(targetLanguage)|\(limit)"
+        if let cached = phraseCache[cacheKey] { return cached }
         let sql = """
             SELECT stable_id,pinyin,chinese,english,priority
             FROM phrases
@@ -63,6 +68,10 @@ public final class SQLiteExampleRepository: ExampleRepository, @unchecked Sendab
                 examples: examplesLocked(for: chinese, limit: 3)
             ))
         }
+        if phraseCache.count >= maximumCacheEntries {
+            phraseCache.removeAll(keepingCapacity: true)
+        }
+        phraseCache[cacheKey] = results
         return results
     }
 
@@ -70,7 +79,14 @@ public final class SQLiteExampleRepository: ExampleRepository, @unchecked Sendab
         guard !term.isEmpty, limit > 0 else { return [] }
         lock.lock()
         defer { lock.unlock() }
-        return examplesLocked(for: term, limit: limit)
+        let cacheKey = "\(term)|\(limit)"
+        if let cached = exampleCache[cacheKey] { return cached }
+        let results = examplesLocked(for: term, limit: limit)
+        if exampleCache.count >= maximumCacheEntries {
+            exampleCache.removeAll(keepingCapacity: true)
+        }
+        exampleCache[cacheKey] = results
+        return results
     }
 
     private func examplesLocked(for term: String, limit: Int) -> [ExampleSentence] {

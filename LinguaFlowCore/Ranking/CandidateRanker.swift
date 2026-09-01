@@ -61,7 +61,13 @@ public enum CandidateRanker {
         _ selectionCounts: [String: Int],
         explicitSegments: [String]
     ) -> Int64 {
-        let isExact = PinyinNormalizer.normalize(candidate.pinyin) == normalizedInput
+        // A bare initial is an unfinished spelling in normal IME use. Some
+        // dictionaries also contain marginal syllabic interjections such as
+        // `m2`/`m4`, which normalize to `m`; treating those as exact matches
+        // incorrectly puts zero-frequency rare characters ahead of `ma`,
+        // `mei`, and other everyday completions.
+        let isExact = !isBarePinyinInitial(normalizedInput)
+            && PinyinNormalizer.normalize(candidate.pinyin) == normalizedInput
         let exactBonus: Int64 = isExact ? 5_000_000 : 0
         let frequencyScore = Int64(log1p(Double(max(0, candidate.frequency))) * 100_000)
         let selectionBonus = Int64(selectionCounts[candidate.id, default: 0]) * 75_000
@@ -91,6 +97,13 @@ public enum CandidateRanker {
             - longEntryPenalty
             - missingTranslationPenalty
             - properNounPenalty
+    }
+
+    private static func isBarePinyinInitial(_ input: String) -> Bool {
+        [
+            "b", "p", "m", "f", "d", "t", "n", "l", "g", "k", "h",
+            "j", "q", "x", "zh", "ch", "sh", "r", "z", "c", "s", "y", "w",
+        ].contains(input)
     }
 
     private static func matchedPrefixLength(_ candidate: Candidate, _ input: String) -> Int {

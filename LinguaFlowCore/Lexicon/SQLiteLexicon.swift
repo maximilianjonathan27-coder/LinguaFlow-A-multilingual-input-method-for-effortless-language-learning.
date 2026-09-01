@@ -4,6 +4,13 @@ import SQLite3
 private let sqliteTransient = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
 
 public final class SQLiteLexicon: LexiconRepository, @unchecked Sendable {
+    private struct QueryKey: Hashable {
+        let whereClause: String
+        let matchValues: [String]
+        let targetLanguage: String
+        let limit: Int
+    }
+
     private struct LexemeResult {
         let id: String
         let pinyin: String
@@ -25,6 +32,8 @@ public final class SQLiteLexicon: LexiconRepository, @unchecked Sendable {
 
     private let database: OpaquePointer
     private let lock = NSLock()
+    private var queryCache: [QueryKey: [Candidate]] = [:]
+    private let maximumCachedQueries = 2_048
 
     public init(databaseURL: URL) throws {
         var database: OpaquePointer?
@@ -101,7 +110,10 @@ public final class SQLiteLexicon: LexiconRepository, @unchecked Sendable {
         limit: Int
     ) -> [Candidate] {
         let normalized = PinyinNormalizer.normalize(input)
-        guard normalized.count >= 4, limit > 0 else { return [] }
+        // Single-key correction grows with every typed character and generates
+        // hundreds of lookup keys for a sentence. Restrict it to short words;
+        // continuous Pinyin uses the sentence decoder instead.
+        guard normalized.count >= 4, normalized.count <= 7, limit > 0 else { return [] }
         let correctionKeys = PinyinNormalizer.singleEditCorrectionKeys(for: normalized)
         guard !correctionKeys.isEmpty else { return [] }
         let characters = Array(normalized)
@@ -153,6 +165,16 @@ public final class SQLiteLexicon: LexiconRepository, @unchecked Sendable {
         lock.lock()
         defer { lock.unlock() }
 
+        let cacheKey = QueryKey(
+            whereClause: whereClause,
+            matchValues: matchValues,
+            targetLanguage: targetLanguage,
+            limit: limit
+        )
+        if let cached = queryCache[cacheKey] {
+            return cached
+        }
+
         let sql = """
             SELECT l.stable_id, l.pinyin, l.chinese, l.frequency, l.is_proper_noun
             FROM lexemes AS l
@@ -190,7 +212,7 @@ public final class SQLiteLexicon: LexiconRepository, @unchecked Sendable {
                 isProperNoun: sqlite3_column_int(statement, 4) != 0
             ))
         }
-        return lexemes.map { lexeme in
+        let results = lexemes.map { lexeme in
             let senses = senses(for: lexeme.id, targetLanguage: targetLanguage)
             let primary = senses.first
             return Candidate(
@@ -206,6 +228,11 @@ public final class SQLiteLexicon: LexiconRepository, @unchecked Sendable {
                 isProperNoun: lexeme.isProperNoun
             )
         }
+        if queryCache.count >= maximumCachedQueries {
+            queryCache.removeAll(keepingCapacity: true)
+        }
+        queryCache[cacheKey] = results
+        return results
     }
 
     private func senses(for lexemeID: String, targetLanguage: String) -> [TranslationSense] {

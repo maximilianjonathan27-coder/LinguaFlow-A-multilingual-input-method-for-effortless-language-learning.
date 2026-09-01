@@ -116,6 +116,54 @@ final class LexiconTests: XCTestCase {
         XCTAssertFalse(topFive.contains("三国群英传"))
     }
 
+    func testBareInitialsUseCommonPrefixFrequencyInsteadOfRareExactMatch() {
+        let initialsAndCompletions = [
+            ("b", "ba"), ("p", "pa"), ("m", "ma"), ("f", "fa"),
+            ("d", "da"), ("t", "ta"), ("n", "na"), ("l", "la"),
+            ("g", "ga"), ("k", "ka"), ("h", "ha"), ("j", "ji"),
+            ("q", "qi"), ("x", "xi"), ("zh", "zha"), ("ch", "cha"),
+            ("sh", "sha"), ("r", "ren"), ("z", "za"), ("c", "ca"),
+            ("s", "sa"), ("y", "ya"), ("w", "wa"),
+        ]
+
+        for (initial, completion) in initialsAndCompletions {
+            let candidates = [
+                Candidate(
+                    id: "rare-\(initial)",
+                    pinyin: initial,
+                    sourceText: "罕",
+                    translation: "rare",
+                    frequency: 0
+                ),
+                Candidate(
+                    id: "common-\(initial)",
+                    pinyin: completion,
+                    sourceText: "常",
+                    translation: "common",
+                    frequency: 1_000_000
+                ),
+            ]
+
+            XCTAssertEqual(
+                CandidateRanker.rank(candidates, for: initial, selectionCounts: [:]).first?.id,
+                "common-\(initial)",
+                "\(initial) should be ranked as an unfinished Pinyin prefix"
+            )
+        }
+    }
+
+    func testRealMInitialPrioritizesCommonCharactersOverSyllabicInterjections() throws {
+        var machine = CompositionStateMachine(
+            lexicon: try SQLiteLexicon(databaseURL: databaseURL)
+        )
+        _ = machine.handle(.insertLetter("m"))
+
+        let topFive = machine.allCandidates.prefix(5).map(\.sourceText)
+        XCTAssertEqual(topFive.first, "吗")
+        XCTAssertTrue(topFive.contains("没"))
+        XCTAssertFalse(topFive.contains("呣"))
+    }
+
     func testSQLiteLexiconSupportsCommonCharactersAndPrefixLookup() throws {
         let lexicon = try SQLiteLexicon(databaseURL: databaseURL)
 
@@ -323,6 +371,27 @@ final class LexiconTests: XCTestCase {
 
         XCTAssertEqual(results.first?.sourceText, "你帮我")
         XCTAssertEqual(results.first?.pinyin, "nibangw")
+    }
+
+    func testDecoderPrefersFrequentWholeSentenceSegmentation() throws {
+        let decoder = PinyinDecoder(lexicon: try SQLiteLexicon(databaseURL: databaseURL))
+        let results = decoder.candidates(for: "nixianba", limit: 20)
+
+        XCTAssertEqual(results.first?.sourceText, "你先把")
+        XCTAssertNotEqual(results.first?.sourceText, "逆袭按把")
+    }
+
+    func testRepeatedSentenceDecodingUsesCachedDatabaseQueries() throws {
+        let decoder = PinyinDecoder(
+            lexicon: try SQLiteLexicon(databaseURL: databaseURL),
+            examples: try SQLiteExampleRepository(databaseURL: examplesDatabaseURL)
+        )
+
+        let first = decoder.candidates(for: "woyaoshenqingdaxue", limit: 30)
+        let repeated = decoder.candidates(for: "woyaoshenqingdaxue", limit: 30)
+
+        XCTAssertEqual(repeated, first)
+        XCTAssertTrue(repeated.contains { $0.sourceText == "我要申请大学" })
     }
 
     func testDecoderSupportsMixedFullPinyinAndInitials() throws {

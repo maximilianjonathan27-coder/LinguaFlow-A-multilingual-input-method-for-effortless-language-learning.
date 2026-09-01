@@ -96,7 +96,14 @@ public struct PinyinDecoder: Sendable {
                 )
             )
             if !corrections.isEmpty {
-                results.insert(contentsOf: corrections, at: 0)
+                if results.isEmpty {
+                    results = corrections
+                } else {
+                    // A complete multi-syllable decode is stronger evidence than
+                    // a one-key typo guess. Keep corrections available without
+                    // letting `nidianba` displace valid `ni xian ba` decoding.
+                    results.append(contentsOf: corrections)
+                }
             }
         }
 
@@ -301,8 +308,19 @@ public struct PinyinDecoder: Sendable {
                 for path in paths[start].prefix(12) {
                     for word in words {
                         let frequencyScore = Int64(log(Double(max(1, word.frequency))) * 1_000)
-                        let phraseBonus = Int64(max(0, word.sourceText.count - 1)) * 25_000
-                        let wordScore = frequencyScore + phraseBonus - 20_000
+                        // A small cohesion bonus keeps genuine common words together,
+                        // while frequency still decides whether a split is plausible.
+                        // The previous 25,000-point bonus made any two-character word
+                        // dominate, so `nixianba` became `逆袭 + 按 + 把` instead of
+                        // the much more frequent `你 + 先 + 把`.
+                        let cohesionBonus = Int64(max(0, word.sourceText.count - 1)) * 3_000
+                        let reviewedPhraseBonus: Int64 = word.id.hasPrefix("phrase.")
+                            ? 30_000
+                            : 0
+                        let wordScore = frequencyScore
+                            + cohesionBonus
+                            + reviewedPhraseBonus
+                            - 16_000
                         paths[end].append(Path(
                             candidates: path.candidates + [word],
                             score: path.score + wordScore
