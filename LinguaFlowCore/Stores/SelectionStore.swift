@@ -64,7 +64,7 @@ public final class SelectionStore {
             )
             let stableID: String
             if components.count == 4, components[0] == "rime" {
-                stableID = "rime:\(components[3])"
+                stableID = "rime:\(components[1]):\(components[3])"
             } else {
                 stableID = candidateID
             }

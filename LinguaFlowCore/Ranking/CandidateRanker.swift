@@ -14,9 +14,15 @@ public enum CandidateRanker {
             // real user commit may change order within that sequence; Seen/
             // exposure counts are deliberately unavailable to this function.
             let learnedRimeCandidates = rimeCandidates.sorted { lhs, rhs in
-                let lhsUsage = selectionCounts[lhs.element.id, default: 0]
-                let rhsUsage = selectionCounts[rhs.element.id, default: 0]
-                if lhsUsage != rhsUsage { return lhsUsage > rhsUsage }
+                let lhsScore = adaptiveRimeScore(
+                    originalIndex: lhs.offset,
+                    usageCount: selectionCounts[lhs.element.id, default: 0]
+                )
+                let rhsScore = adaptiveRimeScore(
+                    originalIndex: rhs.offset,
+                    usageCount: selectionCounts[rhs.element.id, default: 0]
+                )
+                if lhsScore != rhsScore { return lhsScore > rhsScore }
                 return lhs.offset < rhs.offset
             }.map(\.element)
             let supplementalCandidates = candidates.filter {
@@ -30,6 +36,14 @@ public enum CandidateRanker {
         }
 
         return rankLegacy(candidates, for: input, selectionCounts: selectionCounts)
+    }
+
+    private static func adaptiveRimeScore(originalIndex: Int, usageCount: Int) -> Int {
+        // Keep the dictionary rank dominant. The square-root curve gives early
+        // choices a small useful lift while preventing old/high counts from
+        // overwhelming a much more common Rime candidate indefinitely.
+        let usageLift = Int(sqrt(Double(max(0, usageCount))) * 2)
+        return usageLift - originalIndex
     }
 
     private static func rankLegacy(

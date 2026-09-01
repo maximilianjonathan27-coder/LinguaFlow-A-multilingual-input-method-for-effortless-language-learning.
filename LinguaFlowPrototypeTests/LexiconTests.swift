@@ -42,14 +42,14 @@ final class LexiconTests: XCTestCase {
     func testRankerPreservesLibrimeSentenceOrderForTypoRecovery() {
         let candidates = [
             Candidate(
-                id: "rime:这更改",
+                id: "rime:zheggai:这更改",
                 pinyin: "zhe geng gai",
                 sourceText: "这更改",
                 translation: "",
                 frequency: 2_000_000_000
             ),
             Candidate(
-                id: "rime:这",
+                id: "rime:zheggai:这",
                 pinyin: "zhe",
                 sourceText: "这",
                 translation: "this",
@@ -64,7 +64,7 @@ final class LexiconTests: XCTestCase {
     func testLibrimeInitialOrderStaysAheadOfSupplementalHeuristics() {
         let candidates = [
             Candidate(
-                id: "rime:先",
+                id: "rime:xian:先",
                 pinyin: "xian",
                 sourceText: "先",
                 translation: "first",
@@ -78,7 +78,7 @@ final class LexiconTests: XCTestCase {
                 frequency: 2_000_000_000
             ),
             Candidate(
-                id: "rime:现",
+                id: "rime:xian:现",
                 pinyin: "xian",
                 sourceText: "现",
                 translation: "present",
@@ -94,14 +94,14 @@ final class LexiconTests: XCTestCase {
     func testCommittedUsageCanPromoteAStableLibrimeCandidate() {
         let candidates = [
             Candidate(
-                id: "rime:把",
+                id: "rime:ba:把",
                 pinyin: "ba",
                 sourceText: "把",
                 translation: "to hold",
                 frequency: 2_000_000_000
             ),
             Candidate(
-                id: "rime:吧",
+                id: "rime:ba:吧",
                 pinyin: "ba",
                 sourceText: "吧",
                 translation: "modal particle",
@@ -112,10 +112,31 @@ final class LexiconTests: XCTestCase {
         let ranked = CandidateRanker.rank(
             candidates,
             for: "ba",
-            selectionCounts: ["rime:吧": 1]
+            selectionCounts: ["rime:ba:吧": 1]
         )
 
         XCTAssertEqual(ranked.first?.sourceText, "吧")
+    }
+
+    func testUsageLearningCannotOverwhelmDistantLibrimeDefaults() {
+        let candidates = (0..<10).map { index in
+            Candidate(
+                id: "rime:bei:候选\(index)",
+                pinyin: "bei",
+                sourceText: "候选\(index)",
+                translation: "",
+                frequency: 2_000_000_000 - index
+            )
+        }
+
+        let ranked = CandidateRanker.rank(
+            candidates,
+            for: "bei",
+            selectionCounts: ["rime:bei:候选9": 9]
+        )
+
+        XCTAssertEqual(ranked.first?.sourceText, "候选0")
+        XCTAssertEqual(ranked.firstIndex { $0.sourceText == "候选9" }, 4)
     }
 
     func testChinesePunctuationMappingsCoverCommonKeyboardSymbols() {

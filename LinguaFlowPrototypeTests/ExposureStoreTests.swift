@@ -116,7 +116,8 @@ final class ExposureStoreTests: XCTestCase {
 
         let store = SelectionStore(fileURL: fileURL)
 
-        XCTAssertEqual(store.counts["rime:吗"], 5)
+        XCTAssertEqual(store.counts["rime:m:吗"], 2)
+        XCTAssertEqual(store.counts["rime:ma:吗"], 3)
         XCTAssertNil(store.counts["rime:m:0:吗"])
         XCTAssertNil(store.counts["rime:ma:1:吗"])
     }
