@@ -88,6 +88,10 @@ final class CandidatePanelController {
         panel.orderFrontRegardless()
     }
 
+    func updateCounts(_ counts: [String: Int]) {
+        model.counts = counts
+    }
+
     func setExpanded(_ expanded: Bool) {
         guard model.isExpanded != expanded else { return }
         model.isExpanded = expanded

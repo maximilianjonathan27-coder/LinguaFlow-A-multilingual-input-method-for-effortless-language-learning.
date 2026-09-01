@@ -15,6 +15,7 @@ final class LinguaFlowInputController: IMKInputController {
     private lazy var exposureStore = ExposureStore()
     private lazy var selectionStore = SelectionStore()
     private var lastExposedCandidateIDs: [String] = []
+    private var pendingExposureTask: Task<Void, Never>?
     private var lastCaretRectangle = NSRect.zero
     private lazy var candidatePanel: CandidatePanelController = {
         let controller = CandidatePanelController()
@@ -293,10 +294,9 @@ final class LinguaFlowInputController: IMKInputController {
                 )
 
             case let .updateCandidates(candidates, selectedIndex):
-                exposureStore.refresh()
                 let candidateIDs = candidates.map(\.id)
                 if candidateIDs != lastExposedCandidateIDs {
-                    _ = exposureStore.increment(candidates)
+                    scheduleExposureRecording(candidates)
                     lastExposedCandidateIDs = candidateIDs
                 }
                 candidatePanel.show(
@@ -329,6 +329,19 @@ final class LinguaFlowInputController: IMKInputController {
         }
 
         return !transition.forwardsOriginalEvent
+    }
+
+    private func scheduleExposureRecording(_ candidates: [Candidate]) {
+        pendingExposureTask?.cancel()
+        pendingExposureTask = Task { @MainActor [weak self] in
+            // Only record candidates that remain visible for a short pause.
+            // This avoids reading and atomically rewriting a growing JSON file
+            // for every intermediate letter in a composition.
+            try? await Task.sleep(nanoseconds: 300_000_000)
+            guard !Task.isCancelled, let self else { return }
+            _ = self.exposureStore.increment(candidates)
+            self.candidatePanel.updateCounts(self.exposureStore.counts)
+        }
     }
 
     private func caretRectangle(for inputClient: any IMKTextInput) -> NSRect {

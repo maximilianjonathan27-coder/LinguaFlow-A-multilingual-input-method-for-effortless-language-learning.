@@ -69,17 +69,13 @@ final class RimeHybridDecoder: CandidateDecoding, @unchecked Sendable {
             for: input,
             limit: max(100, limit * 2)
         )
-        let queries = rimeQueries(for: input)
-        let primary = rawCandidates(for: queries[0], limit: max(20, limit * 2))
-        let alternatives = queries.dropFirst().flatMap {
-            rawCandidates(for: $0, limit: max(8, limit))
-        }
+        let query = rimeQuery(for: input)
+        let primary = rawCandidates(for: query, limit: limit)
 
         // Preserve LinguaFlow's deliberate English fallback behavior for real
-        // English words such as `hello`. Do not apply it to ambiguous Pinyin:
-        // `xian` is also `xi an`, and that query yields the ordinary word 西安.
-        if fallbackCandidates.first?.domain == "english",
-           !alternatives.contains(where: { $0.text.count > 1 }) {
+        // English words such as `hello`. Exact/ordinary Chinese Pinyin remains
+        // first in the fallback decoder, so `he` and `xian` stay Chinese.
+        if fallbackCandidates.first?.domain == "english" {
             return cache(
                 Array(fallbackCandidates.prefix(limit)),
                 input: cacheKey,
@@ -87,7 +83,7 @@ final class RimeHybridDecoder: CandidateDecoding, @unchecked Sendable {
             )
         }
 
-        guard !primary.isEmpty || !alternatives.isEmpty else {
+        guard !primary.isEmpty else {
             return cache(
                 Array(fallbackCandidates.prefix(limit)),
                 input: cacheKey,
@@ -95,12 +91,11 @@ final class RimeHybridDecoder: CandidateDecoding, @unchecked Sendable {
             )
         }
 
-        // The untouched primary sequence is librime's default ranking. Alternate
-        // segmentations may fill missing results, but must never be injected into
-        // or placed ahead of librime's own sequence. For example, librime already
-        // includes 西安 in the normal `xian` list at its dictionary-ranked position.
-        var rawResults = primary
-        rawResults.append(contentsOf: alternatives)
+        // librime itself performs syllable segmentation and already includes
+        // alternatives such as 西安 in the normal `xian` result. Running our own
+        // alternate queries here duplicates work on every keystroke and can also
+        // disturb librime's ranking contract.
+        let rawResults = primary
 
         let metadataByText = Dictionary(
             fallbackCandidates.map { ($0.sourceText, $0) },
@@ -151,22 +146,14 @@ final class RimeHybridDecoder: CandidateDecoding, @unchecked Sendable {
         return candidates
     }
 
-    private func rimeQueries(for input: String) -> [String] {
+    private func rimeQuery(for input: String) -> String {
         let explicit = input.lowercased()
             .split(whereSeparator: { $0.isWhitespace || $0 == "'" })
             .map(String.init)
         if explicit.count > 1 {
-            return [explicit.joined(separator: "'")]
+            return explicit.joined(separator: "'")
         }
-
-        let normalized = PinyinNormalizer.normalize(input)
-        var queries = [normalized]
-        for segmentation in PinyinNormalizer.segmentations(for: input, limit: 3)
-            where segmentation.count > 1 {
-            let query = segmentation.joined(separator: "'")
-            if !queries.contains(query) { queries.append(query) }
-        }
-        return queries
+        return PinyinNormalizer.normalize(input)
     }
 
     private func rawCandidates(for query: String, limit: Int) -> [RawCandidate] {
