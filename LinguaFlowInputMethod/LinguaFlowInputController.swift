@@ -11,6 +11,7 @@ final class LinguaFlowInputController: IMKInputController {
         category: "InputController"
     )
     private var stateMachine: CompositionStateMachine
+    private let usesRime: Bool
     private lazy var exposureStore = ExposureStore()
     private lazy var selectionStore = SelectionStore()
     private var lastExposedCandidateIDs: [String] = []
@@ -26,12 +27,33 @@ final class LinguaFlowInputController: IMKInputController {
     override init!(server: IMKServer!, delegate: Any!, client inputClient: Any!) {
         if let databaseURL = Bundle.main.url(forResource: "linguaflow", withExtension: "sqlite"),
            let sqliteLexicon = try? SQLiteLexicon(databaseURL: databaseURL) {
-            stateMachine = CompositionStateMachine(lexicon: sqliteLexicon)
+            let sharedDataURL = Bundle.main.resourceURL?
+                .appendingPathComponent("Rime", isDirectory: true)
+            let userDataURL = FileManager.default.urls(
+                for: .applicationSupportDirectory,
+                in: .userDomainMask
+            ).first?
+                .appendingPathComponent("LinguaFlow", isDirectory: true)
+                .appendingPathComponent("Rime", isDirectory: true)
+            if let sharedDataURL,
+               let userDataURL,
+               let rimeDecoder = RimeHybridDecoder(
+                   sharedDataURL: sharedDataURL,
+                   userDataURL: userDataURL,
+                   lexicon: sqliteLexicon
+               ) {
+                stateMachine = CompositionStateMachine(decoder: rimeDecoder)
+                usesRime = true
+            } else {
+                stateMachine = CompositionStateMachine(lexicon: sqliteLexicon)
+                usesRime = false
+            }
         } else {
             stateMachine = CompositionStateMachine()
+            usesRime = false
         }
         super.init(server: server, delegate: delegate, client: inputClient)
-        Self.logger.notice("Input controller initialized")
+        Self.logger.notice("Input controller initialized; librime=\(self.usesRime)")
     }
 
     override func recognizedEvents(_ sender: Any!) -> Int {

@@ -1,0 +1,10 @@
+__build_info:
+  rime_version: 1.17.0
+  timestamps:
+    default: 1788257865
+    default.custom: 0
+config_version: 1.0
+menu:
+  page_size: 9
+schema_list:
+  - schema: linguaflow_pinyin

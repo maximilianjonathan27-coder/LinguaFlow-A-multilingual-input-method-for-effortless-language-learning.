@@ -1,6 +1,10 @@
 import Foundation
 
-public struct PinyinDecoder: Sendable {
+public protocol CandidateDecoding: Sendable {
+    func candidates(for input: String, limit: Int) -> [Candidate]
+}
+
+public struct PinyinDecoder: CandidateDecoding, Sendable {
     private struct Path {
         let candidates: [Candidate]
         let score: Int64

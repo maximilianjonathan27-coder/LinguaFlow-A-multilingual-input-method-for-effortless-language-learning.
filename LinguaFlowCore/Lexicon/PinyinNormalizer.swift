@@ -125,7 +125,7 @@ public enum PinyinNormalizer {
         return corrections.sorted()
     }
 
-    static func segments(for input: String) -> [String] {
+    public static func segments(for input: String) -> [String] {
         let characters = Array(normalize(input))
         guard !characters.isEmpty else { return [] }
         var paths = Array<[String]?>(repeating: nil, count: characters.count + 1)

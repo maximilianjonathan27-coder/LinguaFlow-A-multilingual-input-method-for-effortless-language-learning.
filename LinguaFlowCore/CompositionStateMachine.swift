@@ -47,7 +47,7 @@ public struct CompositionStateMachine: Sendable {
     public private(set) var selectedIndex = 0
     public private(set) var pageIndex = 0
     public let pageSize = 5
-    private let decoder: PinyinDecoder
+    private let decoder: any CandidateDecoding
     private var selectionCounts: [String: Int]
 
     public init(
@@ -56,6 +56,14 @@ public struct CompositionStateMachine: Sendable {
         selectionCounts: [String: Int] = [:]
     ) {
         decoder = PinyinDecoder(lexicon: lexicon, targetLanguage: targetLanguage)
+        self.selectionCounts = selectionCounts
+    }
+
+    public init(
+        decoder: any CandidateDecoding,
+        selectionCounts: [String: Int] = [:]
+    ) {
+        self.decoder = decoder
         self.selectionCounts = selectionCounts
     }
 

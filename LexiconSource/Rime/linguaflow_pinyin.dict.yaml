@@ -1,0 +1,8 @@
+---
+name: linguaflow_pinyin
+version: "2026.09.01"
+sort: by_weight
+import_tables:
+  - rime_ice_8105
+  - rime_ice_base
+...
