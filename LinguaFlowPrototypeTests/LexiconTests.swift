@@ -307,6 +307,41 @@ final class LexiconTests: XCTestCase {
         })
     }
 
+    func testSQLiteLexiconProvidesPhraseContinuations() throws {
+        let lexicon = try SQLiteLexicon(databaseURL: databaseURL)
+
+        let cloudPhone = lexicon.continuationCandidates(
+            after: "云手机",
+            matchingPinyinPrefix: "yunshouji",
+            limit: 10
+        )
+        XCTAssertEqual(cloudPhone.first?.sourceText, "云手机用户")
+        XCTAssertEqual(cloudPhone.first?.translation, "cloud phone user")
+        XCTAssertTrue(cloudPhone.allSatisfy {
+            $0.sourceText.hasPrefix("云手机")
+                && PinyinNormalizer.normalize($0.pinyin).hasPrefix("yunshouji")
+                && PinyinNormalizer.normalize($0.pinyin).count > "yunshouji".count
+        })
+
+        let work = lexicon.continuationCandidates(
+            after: "工作",
+            matchingPinyinPrefix: "gongzuo",
+            limit: 20
+        )
+        XCTAssertTrue(work.contains { $0.sourceText == "工作时间" })
+        XCTAssertFalse(work.contains { $0.sourceText == "手机用户" })
+    }
+
+    func testContinuationLookupRequiresAStableMultiCharacterAnchor() throws {
+        let lexicon = try SQLiteLexicon(databaseURL: databaseURL)
+
+        XCTAssertTrue(lexicon.continuationCandidates(
+            after: "云",
+            matchingPinyinPrefix: "yun",
+            limit: 20
+        ).isEmpty)
+    }
+
     func testDecoderPrioritizesExactThenSupportsAbbreviationAndTypos() throws {
         let decoder = PinyinDecoder(lexicon: try SQLiteLexicon(databaseURL: databaseURL))
 

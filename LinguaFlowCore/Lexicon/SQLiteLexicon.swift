@@ -131,6 +131,32 @@ public final class SQLiteLexicon: LexiconRepository, @unchecked Sendable {
             .map { $0 }
     }
 
+    public func continuationCandidates(
+        after sourcePrefix: String,
+        matchingPinyinPrefix input: String,
+        targetLanguage: String,
+        limit: Int
+    ) -> [Candidate] {
+        let normalized = PinyinNormalizer.normalize(input)
+        guard sourcePrefix.count >= 2, normalized.count >= 4, limit > 0 else { return [] }
+        return query(
+            whereClause: """
+                l.normalized_pinyin >= ? AND l.normalized_pinyin < ?
+                AND length(l.normalized_pinyin) > \(normalized.count)
+                AND l.chinese LIKE ? ESCAPE '\\'
+                AND length(l.chinese) > \(sourcePrefix.count)
+                AND length(l.chinese) <= \(sourcePrefix.count + 6)
+                """,
+            matchValues: [
+                normalized,
+                normalized + "{",
+                escapedLikePrefix(sourcePrefix) + "%",
+            ],
+            targetLanguage: targetLanguage,
+            limit: limit
+        )
+    }
+
     public func metadata(
         for sourceTexts: [String],
         targetLanguage: String
@@ -207,6 +233,13 @@ public final class SQLiteLexicon: LexiconRepository, @unchecked Sendable {
             ))
         }
         return results
+    }
+
+    private func escapedLikePrefix(_ value: String) -> String {
+        value
+            .replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "%", with: "\\%")
+            .replacingOccurrences(of: "_", with: "\\_")
     }
 
     private func text(_ statement: OpaquePointer, _ column: Int32) -> String {

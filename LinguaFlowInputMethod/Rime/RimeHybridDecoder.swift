@@ -147,10 +147,64 @@ final class RimeHybridDecoder: CandidateDecoding, @unchecked Sendable {
             ))
         }
 
+        insertContinuationCandidates(
+            into: &results,
+            for: input,
+            normalizedInput: normalized,
+            seenText: &seenText,
+            limit: min(8, max(0, limit - 1))
+        )
+
         for candidate in fallbackCandidates where seenText.insert(candidate.sourceText).inserted {
             results.append(candidate)
         }
         return cache(Array(results.prefix(limit)), input: cacheKey, limit: limit)
+    }
+
+    private func insertContinuationCandidates(
+        into results: inout [Candidate],
+        for input: String,
+        normalizedInput: String,
+        seenText: inout Set<String>,
+        limit: Int
+    ) {
+        guard limit > 0,
+              let anchor = results.first(where: {
+                  $0.sourceText.count >= 2
+                      && PinyinNormalizer.normalize($0.pinyin) == normalizedInput
+              })
+        else { return }
+
+        let continuations = lexicon.continuationCandidates(
+            after: anchor.sourceText,
+            matchingPinyinPrefix: input,
+            targetLanguage: targetLanguage,
+            limit: limit
+        ).filter {
+            $0.sourceText != anchor.sourceText && seenText.insert($0.sourceText).inserted
+        }.map { candidate in
+            Candidate(
+                id: "rime:\(normalizedInput):\(candidate.sourceText)",
+                pinyin: candidate.pinyin,
+                sourceText: candidate.sourceText,
+                translation: candidate.translation,
+                frequency: candidate.frequency,
+                targetLanguage: candidate.targetLanguage,
+                partOfSpeech: candidate.partOfSpeech,
+                domain: candidate.domain,
+                style: candidate.style
+            )
+        }
+        guard !continuations.isEmpty else { return }
+
+        // Keep every full conversion in librime's order, then show likely
+        // phrase continuations before candidates that only consume part of the
+        // typed Pinyin. This mirrors native input methods without replacing
+        // librime's decoder or requiring a network language model.
+        let insertionIndex = results.lastIndex {
+            PinyinNormalizer.normalize($0.pinyin) == normalizedInput
+        }.map { $0 + 1 } ?? 1
+        results.insert(contentsOf: continuations, at: insertionIndex)
     }
 
     private func translationLookupTexts(in sourceTexts: [String]) -> [String] {

@@ -56,7 +56,11 @@ let lexemes = try rows(at: sourceDirectory.appendingPathComponent("lexicon.tsv")
 let translations = try rows(at: sourceDirectory.appendingPathComponent("translations.tsv"), expectedColumns: 6).map {
     TranslationRow(id: $0[0], language: $0[1], translation: $0[2], partOfSpeech: $0[3], domain: $0[4], style: $0[5])
 }
-let curatedPhraseRows = try ["curated_phrases.tsv", "internet_slang.tsv"].flatMap { fileName in
+let curatedPhraseRows = try [
+    "curated_phrases.tsv",
+    "internet_slang.tsv",
+    "continuation_phrases.tsv",
+].flatMap { fileName in
     try rows(
         at: sourceDirectory.appendingPathComponent(fileName),
         expectedColumns: 8

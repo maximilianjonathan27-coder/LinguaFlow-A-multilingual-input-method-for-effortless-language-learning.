@@ -1,0 +1,62 @@
+stable_id	pinyin	chinese	frequency	translation	part_of_speech	domain	style
+continuation.cloud_phone	yun shou ji	云手机	999900	cloud phone	noun	technology	neutral
+continuation.cloud_phone.user	yun shou ji yong hu	云手机用户	999890	cloud phone user	noun	technology	neutral
+continuation.cloud_phone.service	yun shou ji fu wu	云手机服务	999880	cloud phone service	noun	technology	neutral
+continuation.cloud_phone.platform	yun shou ji ping tai	云手机平台	999870	cloud phone platform	noun	technology	neutral
+continuation.cloud_phone.system	yun shou ji xi tong	云手机系统	999860	cloud phone system	noun	technology	neutral
+continuation.cloud_phone.application	yun shou ji ying yong	云手机应用	999850	cloud phone application	noun	technology	neutral
+continuation.cloud_phone.industry	yun shou ji hang ye	云手机行业	999840	cloud phone industry	noun	technology	neutral
+continuation.cloud_phone.solution	yun shou ji jie jue fang an	云手机解决方案	999830	cloud phone solution	noun	technology	neutral
+continuation.ai.large_language_model	da yu yan mo xing	大语言模型	999820	large language model	noun	technology	neutral
+continuation.ai.multimodal_model	duo mo tai mo xing	多模态模型	999810	multimodal model	noun	technology	neutral
+continuation.ai.generative_ai	sheng cheng shi ren gong zhi neng	生成式人工智能	999800	generative artificial intelligence	noun	technology	neutral
+continuation.ai.assistant	ren gong zhi neng zhu shou	人工智能助手	999790	AI assistant	noun	technology	neutral
+continuation.ai.application	ren gong zhi neng ying yong	人工智能应用	999780	AI application	noun	technology	neutral
+continuation.ai.model	ren gong zhi neng mo xing	人工智能模型	999770	AI model	noun	technology	neutral
+continuation.ai.technology	ren gong zhi neng ji shu	人工智能技术	999760	AI technology	noun	technology	neutral
+continuation.input_method.lexicon	shu ru fa ci ku	输入法词库	999750	input method lexicon	noun	technology	neutral
+continuation.input_method.candidate	shu ru fa hou xuan ci	输入法候选词	999740	input method candidate	noun	technology	neutral
+continuation.input_method.settings	shu ru fa she zhi	输入法设置	999730	input method settings	noun	technology	neutral
+continuation.input_method.experience	shu ru fa ti yan	输入法体验	999720	input method experience	noun	technology	neutral
+continuation.input_method.user	shu ru fa yong hu	输入法用户	999710	input method user	noun	technology	neutral
+continuation.translation.realtime	shi shi fan yi	实时翻译	999700	real-time translation	noun	technology	neutral
+continuation.translation.offline	li xian fan yi	离线翻译	999690	offline translation	noun	technology	neutral
+continuation.translation.machine	ji qi fan yi	机器翻译	999680	machine translation	noun	technology	neutral
+continuation.translation.result	fan yi jie guo	翻译结果	999670	translation result	noun	general	neutral
+continuation.translation.quality	fan yi zhi liang	翻译质量	999660	translation quality	noun	general	neutral
+continuation.translation.software	fan yi ruan jian	翻译软件	999650	translation software	noun	technology	neutral
+continuation.translation.tool	fan yi gong ju	翻译工具	999640	translation tool	noun	technology	neutral
+continuation.user.experience	yong hu ti yan	用户体验	999630	user experience	noun	technology	neutral
+continuation.user.feedback	yong hu fan kui	用户反馈	999620	user feedback	noun	general	neutral
+continuation.user.needs	yong hu xu qiu	用户需求	999610	user needs	noun	general	neutral
+continuation.user.data	yong hu shu ju	用户数据	999600	user data	noun	technology	neutral
+continuation.user.settings	yong hu she zhi	用户设置	999590	user settings	noun	technology	neutral
+continuation.system.settings	xi tong she zhi	系统设置	999580	system settings	noun	technology	neutral
+continuation.system.update	xi tong geng xin	系统更新	999570	system update	noun	technology	neutral
+continuation.system.version	xi tong ban ben	系统版本	999560	system version	noun	technology	neutral
+continuation.system.function	xi tong gong neng	系统功能	999550	system feature	noun	technology	neutral
+continuation.system.problem	xi tong wen ti	系统问题	999540	system problem	noun	technology	neutral
+continuation.software.development	ruan jian kai fa	软件开发	999530	software development	noun	technology	neutral
+continuation.software.update	ruan jian geng xin	软件更新	999520	software update	noun	technology	neutral
+continuation.software.version	ruan jian ban ben	软件版本	999510	software version	noun	technology	neutral
+continuation.software.installation	ruan jian an zhuang	软件安装	999500	software installation	noun	technology	neutral
+continuation.network.connection	wang luo lian jie	网络连接	999490	network connection	noun	technology	neutral
+continuation.network.settings	wang luo she zhi	网络设置	999480	network settings	noun	technology	neutral
+continuation.network.security	wang luo an quan	网络安全	999470	network security	noun	technology	neutral
+continuation.network.problem	wang luo wen ti	网络问题	999460	network problem	noun	technology	neutral
+continuation.data.analysis	shu ju fen xi	数据分析	999450	data analysis	noun	technology	neutral
+continuation.data.processing	shu ju chu li	数据处理	999440	data processing	noun	technology	neutral
+continuation.data.security	shu ju an quan	数据安全	999430	data security	noun	technology	neutral
+continuation.data.model	shu ju mo xing	数据模型	999420	data model	noun	technology	neutral
+continuation.project.plan	xiang mu ji hua	项目计划	999410	project plan	noun	work	neutral
+continuation.project.progress	xiang mu jin du	项目进度	999400	project progress	noun	work	neutral
+continuation.project.management	xiang mu guan li	项目管理	999390	project management	noun	work	neutral
+continuation.project.team	xiang mu tuan dui	项目团队	999380	project team	noun	work	neutral
+continuation.meeting.time	hui yi shi jian	会议时间	999370	meeting time	noun	work	neutral
+continuation.meeting.arrangement	hui yi an pai	会议安排	999360	meeting arrangement	noun	work	neutral
+continuation.meeting.notes	hui yi ji lu	会议记录	999350	meeting notes	noun	work	neutral
+continuation.meeting.notice	hui yi tong zhi	会议通知	999340	meeting notice	noun	work	neutral
+continuation.study.plan	xue xi ji hua	学习计划	999330	study plan	noun	education	neutral
+continuation.study.method	xue xi fang fa	学习方法	999320	study method	noun	education	neutral
+continuation.study.materials	xue xi zi liao	学习资料	999310	study materials	noun	education	neutral
+continuation.study.efficiency	xue xi xiao lv	学习效率	999300	learning efficiency	noun	education	neutral

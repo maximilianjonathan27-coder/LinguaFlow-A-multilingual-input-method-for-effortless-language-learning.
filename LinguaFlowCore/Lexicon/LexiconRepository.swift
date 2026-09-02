@@ -5,6 +5,12 @@ public protocol LexiconRepository: Sendable {
     func prefixCandidates(for input: String, targetLanguage: String, limit: Int) -> [Candidate]
     func abbreviationCandidates(for initials: String, targetLanguage: String, limit: Int) -> [Candidate]
     func correctionCandidates(for input: String, targetLanguage: String, limit: Int) -> [Candidate]
+    func continuationCandidates(
+        after sourcePrefix: String,
+        matchingPinyinPrefix input: String,
+        targetLanguage: String,
+        limit: Int
+    ) -> [Candidate]
     func metadata(for sourceTexts: [String], targetLanguage: String) -> [String: Candidate]
 }
 
@@ -23,6 +29,19 @@ public extension LexiconRepository {
 
     func correctionCandidates(for input: String, limit: Int) -> [Candidate] {
         correctionCandidates(for: input, targetLanguage: "en", limit: limit)
+    }
+
+    func continuationCandidates(
+        after sourcePrefix: String,
+        matchingPinyinPrefix input: String,
+        limit: Int
+    ) -> [Candidate] {
+        continuationCandidates(
+            after: sourcePrefix,
+            matchingPinyinPrefix: input,
+            targetLanguage: "en",
+            limit: limit
+        )
     }
 
     func metadata(for sourceTexts: [String]) -> [String: Candidate] {
@@ -102,6 +121,31 @@ public struct InMemoryLexicon: LexiconRepository {
                     )
             }
             .sorted { $0.frequency > $1.frequency }
+            .prefix(limit)
+            .map { $0 }
+    }
+
+    public func continuationCandidates(
+        after sourcePrefix: String,
+        matchingPinyinPrefix input: String,
+        targetLanguage: String,
+        limit: Int
+    ) -> [Candidate] {
+        let normalized = PinyinNormalizer.normalize(input)
+        guard sourcePrefix.count >= 2, normalized.count >= 4, limit > 0 else { return [] }
+        return candidatesByInput.values
+            .flatMap { $0 }
+            .filter {
+                $0.targetLanguage == targetLanguage
+                    && $0.sourceText.count > sourcePrefix.count
+                    && $0.sourceText.hasPrefix(sourcePrefix)
+                    && PinyinNormalizer.normalize($0.pinyin).hasPrefix(normalized)
+                    && PinyinNormalizer.normalize($0.pinyin).count > normalized.count
+            }
+            .sorted {
+                if $0.frequency != $1.frequency { return $0.frequency > $1.frequency }
+                return $0.sourceText.count < $1.sourceText.count
+            }
             .prefix(limit)
             .map { $0 }
     }
