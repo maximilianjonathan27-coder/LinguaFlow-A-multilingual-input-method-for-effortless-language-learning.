@@ -5,11 +5,15 @@ import SwiftUI
 @MainActor
 final class CandidatePanelController {
     var onSelect: ((String) -> Void)?
+    var onPronunciationPlayed: ((Candidate) -> Void)?
     var isExpanded: Bool { model.isExpanded }
 
     private let model = CandidatePanelModel()
     private let panel: CandidatePanel
-    private let compactSize = NSSize(width: 360, height: 218)
+    private let compactSize = NSSize(
+        width: CandidatePanelLayout.compactWidth,
+        height: CandidatePanelLayout.minimumHeight
+    )
     private let expandedPageSize = 12
     private var compactCandidates: [Candidate] = []
     private var expandedCandidates: [Candidate] = []
@@ -17,8 +21,15 @@ final class CandidatePanelController {
     private var lastAnchor = NSRect.zero
     private var currentQuery = ""
     private var expandedPageIndex = 0
+    private let hoverIntent = HoverIntentController()
+    private let vocabularyCard = VocabularyCardController()
+    private let pronunciationController: PronunciationController
+    private var candidateByID: [String: Candidate] = [:]
 
-    init() {
+    init(speechProvider: (any SpeechProviding)? = nil) {
+        pronunciationController = PronunciationController(
+            speechProvider: speechProvider ?? AppleSpeechProvider()
+        )
         panel = CandidatePanel(
             contentRect: NSRect(origin: .zero, size: compactSize),
             styleMask: [.borderless, .nonactivatingPanel],
@@ -32,7 +43,7 @@ final class CandidatePanelController {
         panel.backgroundColor = .clear
         panel.hasShadow = true
         panel.hidesOnDeactivate = false
-        panel.becomesKeyOnlyIfNeeded = true
+        panel.becomesKeyOnlyIfNeeded = false
 
         let rootView = CandidatePanelView(
             model: model,
@@ -42,27 +53,45 @@ final class CandidatePanelController {
             onToggleExpanded: { [weak self] in
                 guard let self else { return }
                 self.setExpanded(!self.isExpanded)
+            },
+            onTranslationHover: { [weak self] candidate, inside in
+                guard let self else { return }
+                if inside { self.hoverIntent.pointerEnteredTranslation(candidate.id) }
+                else { self.hoverIntent.pointerExitedTranslation() }
+            },
+            onTranslationDoubleClick: { [weak self] candidate in
+                self?.pronunciationController.pronounce(candidate)
             }
         )
-        let hostingView = NSHostingView(rootView: rootView)
-        hostingView.translatesAutoresizingMaskIntoConstraints = false
+        panel.contentView = NSHostingView(rootView: rootView)
 
-        let glassView = NSVisualEffectView(frame: NSRect(origin: .zero, size: compactSize))
-        glassView.material = .popover
-        glassView.blendingMode = .behindWindow
-        glassView.state = .active
-        glassView.wantsLayer = true
-        glassView.layer?.cornerRadius = 14
-        glassView.layer?.cornerCurve = .continuous
-        glassView.layer?.masksToBounds = true
-        glassView.addSubview(hostingView)
-        NSLayoutConstraint.activate([
-            hostingView.leadingAnchor.constraint(equalTo: glassView.leadingAnchor),
-            hostingView.trailingAnchor.constraint(equalTo: glassView.trailingAnchor),
-            hostingView.topAnchor.constraint(equalTo: glassView.topAnchor),
-            hostingView.bottomAnchor.constraint(equalTo: glassView.bottomAnchor),
-        ])
-        panel.contentView = glassView
+        hoverIntent.onIntent = { [weak self] candidateID in
+            guard let self, let candidate = self.candidateByID[candidateID] else { return }
+            let mouse = NSEvent.mouseLocation
+            self.vocabularyCard.show(
+                candidate: candidate,
+                beside: NSRect(x: mouse.x, y: mouse.y, width: 1, height: 1)
+            )
+        }
+        hoverIntent.onDismiss = { [weak self] in self?.vocabularyCard.hide() }
+        vocabularyCard.onHoverChanged = { [weak self] inside in
+            if inside { self?.hoverIntent.pointerEnteredCard() }
+            else { self?.hoverIntent.pointerExitedCard() }
+        }
+        vocabularyCard.onClose = { [weak self] in self?.hoverIntent.dismissImmediately() }
+        vocabularyCard.onPresented = { candidate, definition in
+            VocabularyHistoryService.recordOpenedCard(for: candidate, definition: definition)
+        }
+        vocabularyCard.onPronounce = { [weak self] candidate in
+            self?.pronunciationController.pronounce(candidate)
+        }
+        pronunciationController.onPronunciationPlayed = { [weak self] candidate in
+            self?.onPronunciationPlayed?(candidate)
+        }
+        pronunciationController.onSpeakingCandidateChanged = { [weak self, weak model] candidateID in
+            model?.speakingCandidateID = candidateID
+            self?.vocabularyCard.setSpeakingCandidateID(candidateID)
+        }
     }
 
     func show(
@@ -73,11 +102,18 @@ final class CandidatePanelController {
         counts: [String: Int],
         anchor: NSRect
     ) {
+        let shouldAnimateAppearance = !panel.isVisible
+        if shouldAnimateAppearance { model.isPresented = false }
         if currentQuery != query {
             expandedPageIndex = 0
         }
+        let newCandidateIDs = expandedCandidates.map(\.id)
+        if Set(newCandidateIDs) != Set(candidateByID.keys) {
+            hoverIntent.reset()
+        }
         self.compactCandidates = compactCandidates
         self.expandedCandidates = expandedCandidates
+        candidateByID = Dictionary(expandedCandidates.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         self.selectedCandidateID = selectedCandidateID
         currentQuery = query
         lastAnchor = anchor
@@ -86,6 +122,11 @@ final class CandidatePanelController {
         updateVisibleCandidates()
         positionPanel()
         panel.orderFrontRegardless()
+        if shouldAnimateAppearance {
+            DispatchQueue.main.async { [weak model] in model?.isPresented = true }
+        } else {
+            model.isPresented = true
+        }
     }
 
     func updateCounts(_ counts: [String: Int]) {
@@ -96,6 +137,7 @@ final class CandidatePanelController {
         guard currentQuery == query, !translations.isEmpty else { return }
         compactCandidates = compactCandidates.map { replacingTranslation(in: $0, using: translations) }
         expandedCandidates = expandedCandidates.map { replacingTranslation(in: $0, using: translations) }
+        candidateByID = Dictionary(expandedCandidates.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         updateVisibleCandidates()
     }
 
@@ -160,6 +202,9 @@ final class CandidatePanelController {
     }
 
     func hide() {
+        hoverIntent.reset()
+        vocabularyCard.hide()
+        model.isPresented = false
         panel.orderOut(nil)
         model.isExpanded = false
         compactCandidates = []
@@ -167,6 +212,11 @@ final class CandidatePanelController {
         selectedCandidateID = nil
         expandedPageIndex = 0
         model.selectedIndex = 0
+        candidateByID = [:]
+    }
+
+    func stopPronunciation() {
+        pronunciationController.stop()
     }
 
     private func updateVisibleCandidates() {
@@ -202,10 +252,14 @@ final class CandidatePanelController {
             sourceText: candidate.sourceText,
             translation: translation,
             frequency: candidate.frequency,
+            sourceLanguage: candidate.sourceLanguage,
             targetLanguage: candidate.targetLanguage,
             partOfSpeech: candidate.partOfSpeech,
             domain: candidate.domain,
-            style: candidate.style
+            style: candidate.style,
+            translationSenses: candidate.translationSenses,
+            isProperNoun: candidate.isProperNoun,
+            examples: candidate.examples
         )
     }
 

@@ -178,6 +178,48 @@ public final class SQLiteLexicon: LexiconRepository, @unchecked Sendable {
         return result
     }
 
+    /// Additive reverse lookup used only by English → Chinese mode. Existing
+    /// Pinyin queries and their ordering continue to use the methods above.
+    public func englishCandidates(for input: String, limit: Int) -> [Candidate] {
+        let normalized = input.lowercased().filter { $0.isASCII && $0.isLetter }
+        guard !normalized.isEmpty, limit > 0 else { return [] }
+
+        lock.lock()
+        defer { lock.unlock() }
+        let sql = """
+            SELECT normalized_term, frequency, chinese
+            FROM english_terms
+            WHERE normalized_term >= ? AND normalized_term < ?
+            ORDER BY CASE WHEN normalized_term = ? THEN 0 ELSE 1 END,
+                     frequency DESC, normalized_term ASC
+            LIMIT ?
+            """
+        var statement: OpaquePointer?
+        guard sqlite3_prepare_v2(database, sql, -1, &statement, nil) == SQLITE_OK,
+              let statement else { return [] }
+        defer { sqlite3_finalize(statement) }
+
+        sqlite3_bind_text(statement, 1, normalized, -1, sqliteTransient)
+        sqlite3_bind_text(statement, 2, normalized + "{", -1, sqliteTransient)
+        sqlite3_bind_text(statement, 3, normalized, -1, sqliteTransient)
+        sqlite3_bind_int(statement, 4, Int32(min(limit, Int(Int32.max))))
+
+        var results: [Candidate] = []
+        while sqlite3_step(statement) == SQLITE_ROW {
+            let term = text(statement, 0)
+            results.append(Candidate(
+                id: "en-zh:word:\(term)",
+                pinyin: term,
+                sourceText: term,
+                translation: text(statement, 2),
+                frequency: Int(sqlite3_column_int64(statement, 1)),
+                sourceLanguage: .english,
+                targetLanguage: SupportedLanguage.chineseSimplified.rawValue
+            ))
+        }
+        return results
+    }
+
     private func query(
         whereClause: String,
         matchValues: [String],
@@ -250,5 +292,17 @@ public final class SQLiteLexicon: LexiconRepository, @unchecked Sendable {
     private func optionalText(_ statement: OpaquePointer, _ column: Int32) -> String? {
         guard sqlite3_column_type(statement, column) != SQLITE_NULL else { return nil }
         return text(statement, column)
+    }
+}
+
+public struct EnglishCandidateDecoder: CandidateDecoding, Sendable {
+    private let lexicon: SQLiteLexicon
+
+    public init(lexicon: SQLiteLexicon) {
+        self.lexicon = lexicon
+    }
+
+    public func candidates(for input: String, limit: Int) -> [Candidate] {
+        lexicon.englishCandidates(for: input, limit: limit)
     }
 }

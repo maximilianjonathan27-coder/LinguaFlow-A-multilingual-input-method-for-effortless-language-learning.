@@ -1,249 +1,294 @@
-import LinguaFlowCore
+import AppKit
 import SwiftUI
 
 struct ContentView: View {
-    let exposureStore: ExposureStore
+    @StateObject private var settings = LinguaFlowSettings()
+    @State private var selection: SettingsSection = .overview
+    @State private var columnVisibility: NavigationSplitViewVisibility = .all
+    @State private var showsTranslationLab = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Namespace private var sidebarSelection
 
-    @Environment(\.scenePhase) private var scenePhase
-    @State private var installer = InputMethodInstaller()
-    @State private var isShowingResetConfirmation = false
-    @State private var isShowingTranslationTest = false
-
-    private var totalSeenCount: Int {
-        exposureStore.counts.values.reduce(0, +)
-    }
+    private let sidebarGroups: [(title: String, sections: [SettingsSection])] = [
+        ("输入体验", [.overview, .candidates, .translation]),
+        ("语言学习", [.learning, .vocabulary, .vocabularyLibrary]),
+        ("个性化", [.motion]),
+        ("账户", [.membership])
+    ]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 24) {
-            header
-            installationCard
-            learningCard
-            translationTestCard
-            privacyNote
-        }
-        .padding(32)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .onChange(of: scenePhase) { _, newPhase in
-            guard newPhase == .active else { return }
-            installer.refreshStatus()
-            exposureStore.refresh()
-        }
-        .confirmationDialog(
-            "确定要清空全部学习记录吗？",
-            isPresented: $isShowingResetConfirmation,
-            titleVisibility: .visible
-        ) {
-            Button("清空学习记录", role: .destructive) {
-                _ = exposureStore.reset()
+        NavigationSplitView(columnVisibility: $columnVisibility) {
+            sidebar
+                .navigationSplitViewColumnWidth(min: 210, ideal: 232, max: 260)
+        } detail: {
+            ZStack {
+                LinguaFlowWindowBackground()
+
+                selectedPage
+                    .id(selection)
+                    .transition(
+                        reduceMotion
+                            ? .opacity
+                            : .opacity.combined(with: .offset(y: 6))
+                    )
             }
-            Button("取消", role: .cancel) {}
-        } message: {
-            Text("所有候选词的 Seen count 都会归零，这个操作无法撤销。")
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.22), value: selection)
         }
-        .sheet(isPresented: $isShowingTranslationTest) {
+        .navigationSplitViewStyle(.balanced)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                HStack(spacing: 6) {
+                    Button {
+                        showsTranslationLab = true
+                    } label: {
+                        Label("本地翻译实验", systemImage: "character.book.closed")
+                    }
+
+                    Divider().frame(height: 14)
+
+                    Circle()
+                        .fill(Color.green)
+                        .frame(width: 7, height: 7)
+                    Text("本机运行")
+                        .font(.system(size: 11.5, weight: .medium))
+                        .foregroundStyle(.secondary)
+                }
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("LinguaFlow 本机运行")
+            }
+        }
+        .sheet(isPresented: $showsTranslationLab) {
             TranslationTestContainerView()
         }
     }
 
-    private var header: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("LinguaFlow")
-                .font(.system(size: 34, weight: .bold, design: .rounded))
+    private var sidebar: some View {
+        ZStack {
+            Rectangle().fill(.ultraThinMaterial).ignoresSafeArea()
 
-            Text("Type naturally. Learn effortlessly.")
-                .font(.title3.weight(.medium))
-                .foregroundStyle(.secondary)
+            LinearGradient(
+                colors: [Color.cyan.opacity(0.035), .clear],
+                startPoint: .topLeading,
+                endPoint: .center
+            )
+            .ignoresSafeArea()
 
-            Text("安装 LinguaFlow 输入法，让双语候选跟随你在任何 App 中的光标。")
-                .foregroundStyle(.secondary)
+            VStack(spacing: 0) {
+                brandHeader
+
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 16) {
+                        ForEach(Array(sidebarGroups.enumerated()), id: \.offset) { _, group in
+                            VStack(alignment: .leading, spacing: 5) {
+                                Text(group.title)
+                                    .font(.system(size: 10.5, weight: .semibold))
+                                    .foregroundStyle(.tertiary)
+                                    .textCase(.uppercase)
+                                    .tracking(0.35)
+                                    .padding(.leading, 12)
+
+                                ForEach(group.sections) { section in
+                                    SidebarNavigationButton(
+                                        section: section,
+                                        selection: $selection,
+                                        selectionNamespace: sidebarSelection
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 11)
+                    .padding(.top, 4)
+                    .padding(.bottom, 14)
+                }
+
+                sidebarFooter
+            }
         }
     }
 
-    private var installationCard: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            HStack(alignment: .top, spacing: 14) {
-                Image(systemName: statusSymbol)
-                    .font(.system(size: 26, weight: .semibold))
-                    .foregroundStyle(statusColor)
-                    .frame(width: 34)
+    private var brandHeader: some View {
+        HStack(spacing: 11) {
+            Image(nsImage: NSApplication.shared.applicationIconImage)
+                .resizable()
+                .interpolation(.high)
+                .frame(width: 38, height: 38)
+                .accessibilityHidden(true)
 
-                VStack(alignment: .leading, spacing: 5) {
-                    Text(statusTitle)
-                        .font(.title3.weight(.semibold))
-                    Text(statusMessage)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
+            VStack(alignment: .leading, spacing: 1) {
+                Text("LinguaFlow")
+                    .font(.system(size: 16, weight: .bold, design: .rounded))
+                Text("Settings")
+                    .font(.system(size: 11.5, weight: .medium))
+                    .foregroundStyle(.secondary)
             }
+            Spacer()
+        }
+        .padding(.horizontal, 17)
+        .padding(.top, 16)
+        .padding(.bottom, 14)
+    }
 
-            HStack(spacing: 12) {
-                Button(installButtonTitle) {
-                    installer.installOrUpdate()
+    private var sidebarFooter: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Divider().opacity(0.6)
+            Button {
+                if reduceMotion {
+                    selection = .overview
+                } else {
+                    withAnimation(.easeOut(duration: 0.2)) { selection = .overview }
                 }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
-                .disabled(installer.status == .installing || installer.status == .embeddedInputMethodMissing)
+            } label: {
+                SidebarStatusCard()
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, 11)
+            .padding(.bottom, 11)
+        }
+    }
 
-                Button(installer.isInputMethodEnabled ? "已经启用" : "启用 LinguaFlow") {
-                    installer.enableInputMethod()
-                }
-                .controlSize(.large)
-                .disabled(
-                    installer.isInputMethodEnabled
-                        || installer.status != .installed
-                )
+    @ViewBuilder
+    private var selectedPage: some View {
+        switch selection {
+        case .overview:
+            OverviewPage(settings: settings)
+        case .candidates:
+            CandidateSettingsPage(settings: settings)
+        case .translation:
+            TranslationSettingsPage(settings: settings)
+        case .learning:
+            LearningSettingsPage(settings: settings)
+        case .vocabulary:
+            VocabularySettingsPage(settings: settings)
+        case .vocabularyLibrary:
+            VocabularyLibraryPage()
+        case .motion:
+            MotionSettingsPage(settings: settings)
+        case .membership:
+            MembershipSettingsPage(settings: settings)
+        }
+    }
+}
 
-                Button("打开键盘设置") {
-                    installer.openKeyboardSettings()
-                }
-                .controlSize(.large)
+private struct SidebarNavigationButton: View {
+    let section: SettingsSection
+    @Binding var selection: SettingsSection
+    let selectionNamespace: Namespace.ID
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var isHovering = false
+
+    private var isSelected: Bool { selection == section }
+
+    var body: some View {
+        Button {
+            if reduceMotion {
+                selection = section
+            } else {
+                withAnimation(.easeOut(duration: 0.20)) { selection = section }
+            }
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: section.symbol)
+                    .font(.system(size: 13.5, weight: .semibold))
+                    .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
+                    .frame(width: 22)
+
+                Text(section.title)
+                    .font(.system(size: 13.5, weight: isSelected ? .semibold : .medium))
 
                 Spacer()
 
-                Text("当前用户安装")
-                    .font(.footnote)
-                    .foregroundStyle(.tertiary)
-            }
-
-            Divider()
-
-            VStack(alignment: .leading, spacing: 6) {
-                Text("启用步骤")
-                    .font(.headline)
-                Text("先点击“启用 LinguaFlow”，然后从菜单栏输入法图标切换到 LinguaFlow。")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .textSelection(.enabled)
-
-                if let enableErrorMessage = installer.enableErrorMessage {
-                    Text(enableErrorMessage)
-                        .font(.callout)
-                        .foregroundStyle(.orange)
+                if isHovering, !isSelected {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(.tertiary)
+                        .transition(.opacity)
                 }
             }
+            .padding(.horizontal, 11)
+            .frame(height: 35)
+            .contentShape(Rectangle())
+            .background {
+                if isSelected {
+                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                        .fill(.thinMaterial)
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 9, style: .continuous)
+                                .fill(Color.accentColor.opacity(0.07))
+                        }
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 9, style: .continuous)
+                                .strokeBorder(
+                                    LinearGradient(
+                                        colors: [Color.white.opacity(0.18), Color.accentColor.opacity(0.10)],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    ),
+                                    lineWidth: 0.75
+                                )
+                        }
+                        .matchedGeometryEffect(id: "sidebar-selection", in: selectionNamespace)
+                } else if isHovering {
+                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                        .fill(Color.primary.opacity(0.045))
+                }
+            }
+            .offset(x: isHovering && !isSelected && !reduceMotion ? 1 : 0)
         }
-        .padding(22)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .buttonStyle(.plain)
+        .onHover { isHovering = $0 }
+        .animation(.easeOut(duration: 0.16), value: isHovering)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+}
+
+private struct SidebarStatusCard: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var isHovering = false
+
+    var body: some View {
+        HStack(spacing: 10) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    .fill(Color.accentColor.opacity(0.12))
+                    .frame(width: 33, height: 33)
+                Image(systemName: "waveform.path")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(Color.accentColor)
+            }
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("LinguaFlow 0.2")
+                    .font(.system(size: 11.5, weight: .semibold))
+                HStack(spacing: 4) {
+                    Circle().fill(Color.green).frame(width: 5, height: 5)
+                    Text("输入法已就绪")
+                        .font(.system(size: 10.5))
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Spacer(minLength: 0)
+
+            Image(systemName: "chevron.right")
+                .font(.system(size: 9, weight: .bold))
+                .foregroundStyle(.tertiary)
+                .opacity(isHovering ? 1 : 0.55)
+        }
+        .padding(10)
+        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 13, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(Color.primary.opacity(0.10), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 13, style: .continuous)
+                .strokeBorder(
+                    isHovering ? Color.accentColor.opacity(0.16) : Color.white.opacity(0.08),
+                    lineWidth: 0.8
+                )
         }
-    }
-
-    private var learningCard: some View {
-        HStack(spacing: 16) {
-            Image(systemName: "character.book.closed")
-                .font(.system(size: 22, weight: .medium))
-                .foregroundStyle(.tint)
-                .frame(width: 34)
-
-            VStack(alignment: .leading, spacing: 3) {
-                Text("本机学习记录")
-                    .font(.headline)
-                Text("累计 Seen \(totalSeenCount) 次 · 只记录候选 ID 和次数")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-            }
-
-            Spacer()
-
-            Button("清空学习记录", role: .destructive) {
-                isShowingResetConfirmation = true
-            }
-            .disabled(!exposureStore.hasExposures)
-        }
-        .padding(18)
-        .background(Color.primary.opacity(0.035), in: RoundedRectangle(cornerRadius: 14))
-    }
-
-    private var translationTestCard: some View {
-        HStack(spacing: 16) {
-            Image(systemName: "translate")
-                .font(.system(size: 22, weight: .medium))
-                .foregroundStyle(.tint)
-                .frame(width: 34)
-
-            VStack(alignment: .leading, spacing: 3) {
-                Text("本地句子翻译实验")
-                    .font(.headline)
-                Text("使用 Apple 设备端模型比较翻译质量和响应时间")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-            }
-
-            Spacer()
-
-            Button("打开测试") {
-                isShowingTranslationTest = true
-            }
-            .buttonStyle(.borderedProminent)
-        }
-        .padding(18)
-        .background(Color.primary.opacity(0.035), in: RoundedRectangle(cornerRadius: 14))
-    }
-
-    private var privacyNote: some View {
-        Label(
-            "输入法完全离线 · 翻译实验在设备端运行 · 不保存输入历史 · 不申请输入监控权限",
-            systemImage: "lock.shield"
-        )
-        .font(.footnote)
-        .foregroundStyle(.secondary)
-    }
-
-    private var statusTitle: String {
-        switch installer.status {
-        case .notInstalled: "输入法尚未安装"
-        case .installed: "输入法已安装"
-        case .updateAvailable: "发现可安装的更新"
-        case .embeddedInputMethodMissing: "安装组件缺失"
-        case .installing: "正在安装…"
-        case .failed: "安装未完成"
-        }
-    }
-
-    private var statusMessage: String {
-        switch installer.status {
-        case .notInstalled:
-            "点击安装后，再到系统键盘设置中手动添加 LinguaFlow。"
-        case .installed:
-            installer.isInputMethodEnabled
-                ? "LinguaFlow 已安装并启用，可以从菜单栏输入法图标切换使用。"
-                : "LinguaFlow 已安装。点击“启用 LinguaFlow”完成系统集成测试；不会自动替换当前输入法。"
-        case .updateAvailable:
-            "点击更新会替换当前用户目录中的旧版本，不需要管理员密码。"
-        case .embeddedInputMethodMissing:
-            "当前 App 没有包含 LinguaFlow 输入法，请通过工程脚本重新构建。"
-        case .installing:
-            "正在复制并向 macOS 注册输入源。"
-        case let .failed(message):
-            message
-        }
-    }
-
-    private var statusSymbol: String {
-        switch installer.status {
-        case .installed: "checkmark.circle.fill"
-        case .installing: "arrow.triangle.2.circlepath"
-        case .failed, .embeddedInputMethodMissing: "exclamationmark.triangle.fill"
-        case .notInstalled, .updateAvailable: "keyboard.badge.ellipsis"
-        }
-    }
-
-    private var statusColor: Color {
-        switch installer.status {
-        case .installed: .green
-        case .failed, .embeddedInputMethodMissing: .orange
-        default: .accentColor
-        }
-    }
-
-    private var installButtonTitle: String {
-        switch installer.status {
-        case .installed: "重新安装"
-        case .updateAvailable: "更新输入法"
-        case .installing: "正在安装…"
-        default: "安装输入法"
-        }
+        .brightness(isHovering ? 0.025 : 0)
+        .offset(y: isHovering && !reduceMotion ? -1 : 0)
+        .shadow(color: .black.opacity(isHovering ? 0.12 : 0.06), radius: isHovering ? 10 : 6, y: 4)
+        .onHover { isHovering = $0 }
+        .animation(.easeOut(duration: 0.18), value: isHovering)
     }
 }

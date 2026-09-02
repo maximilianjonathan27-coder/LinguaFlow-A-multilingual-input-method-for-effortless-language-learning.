@@ -19,6 +19,13 @@ struct TranslationRow {
     let style: String
 }
 
+struct EnglishTermRow {
+    let term: String
+    let frequency: Int64
+    let chinese: String
+    let lexemeID: String?
+}
+
 enum BuildError: LocalizedError {
     case invalidRow(URL, Int)
     case sqlite(String)
@@ -237,6 +244,49 @@ for lexeme in allLexemes where !seedTranslationIDs.contains(lexeme.id) {
 }
 let allTranslations = reviewedTranslations + generatedTranslationsByID.values.sorted { $0.id < $1.id }
 
+func englishTerms(at url: URL, lexemes: [LexemeRow], translations: [TranslationRow]) throws -> [EnglishTermRow] {
+    guard FileManager.default.fileExists(atPath: url.path) else { return [] }
+    let lexemeByID = Dictionary(uniqueKeysWithValues: lexemes.map { ($0.id, $0) })
+    var preferredMeaning: [String: (chinese: String, lexemeID: String, frequency: Int)] = [:]
+
+    for translation in translations where translation.language == "en" {
+        guard let lexeme = lexemeByID[translation.id] else { continue }
+        for rawSense in translation.translation.lowercased().split(separator: ";") {
+            var words = rawSense.split(whereSeparator: { !$0.isASCII || !$0.isLetter }).map(String.init)
+            if words.first == "to" || words.first == "a" || words.first == "an" || words.first == "the" {
+                words.removeFirst()
+            }
+            guard words.count == 1, let term = words.first, term.count >= 2 else { continue }
+            if preferredMeaning[term].map({ $0.frequency < lexeme.frequency }) ?? true {
+                preferredMeaning[term] = (lexeme.chinese, lexeme.id, lexeme.frequency)
+            }
+        }
+    }
+
+    let content = try String(contentsOf: url, encoding: .utf8)
+    return content.split(whereSeparator: \.isNewline).compactMap { line in
+        let columns = line.split(whereSeparator: \.isWhitespace)
+        guard columns.count >= 2,
+              let frequency = Int64(columns[1]),
+              columns[0].allSatisfy({ $0.isASCII && $0.isLetter })
+        else { return nil }
+        let term = columns[0].lowercased()
+        let meaning = preferredMeaning[term]
+        return EnglishTermRow(
+            term: term,
+            frequency: frequency,
+            chinese: meaning?.chinese ?? "",
+            lexemeID: meaning?.lexemeID
+        )
+    }
+}
+
+let allEnglishTerms = try englishTerms(
+    at: sourceDirectory.appendingPathComponent("External/norvig_count_1w.txt"),
+    lexemes: allLexemes,
+    translations: allTranslations
+)
+
 try FileManager.default.createDirectory(
     at: outputURL.deletingLastPathComponent(),
     withIntermediateDirectories: true
@@ -292,6 +342,12 @@ try execute("""
         style TEXT NOT NULL DEFAULT 'neutral',
         PRIMARY KEY (lexeme_id, target_language)
     );
+    CREATE TABLE english_terms (
+        normalized_term TEXT PRIMARY KEY,
+        frequency INTEGER NOT NULL,
+        chinese TEXT NOT NULL DEFAULT '',
+        lexeme_id TEXT
+    );
     BEGIN IMMEDIATE;
     """)
 
@@ -338,13 +394,27 @@ for row in allTranslations {
     try executePrepared(translationStatement)
 }
 
+let englishTermStatement = try prepare("INSERT INTO english_terms VALUES (?, ?, ?, ?)")
+for row in allEnglishTerms {
+    sqlite3_bind_text(englishTermStatement, 1, row.term, -1, transient)
+    sqlite3_bind_int64(englishTermStatement, 2, row.frequency)
+    sqlite3_bind_text(englishTermStatement, 3, row.chinese, -1, transient)
+    if let lexemeID = row.lexemeID {
+        sqlite3_bind_text(englishTermStatement, 4, lexemeID, -1, transient)
+    } else {
+        sqlite3_bind_null(englishTermStatement, 4)
+    }
+    try executePrepared(englishTermStatement)
+}
+
 try execute("COMMIT; PRAGMA optimize;")
 sqlite3_finalize(lexemeStatement)
 sqlite3_finalize(translationStatement)
+sqlite3_finalize(englishTermStatement)
 guard sqlite3_close(database) == SQLITE_OK else {
     throw BuildError.sqlite("could not finalize \(temporaryURL.path)")
 }
 databaseIsOpen = false
 try? FileManager.default.removeItem(at: outputURL)
 try FileManager.default.moveItem(at: temporaryURL, to: outputURL)
-print("Built \(outputURL.path) with \(allLexemes.count) source lexemes and \(allTranslations.count) translations.")
+print("Built \(outputURL.path) with \(allLexemes.count) source lexemes, \(allTranslations.count) translations, and \(allEnglishTerms.count) English terms.")

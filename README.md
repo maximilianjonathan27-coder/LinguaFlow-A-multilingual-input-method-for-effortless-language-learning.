@@ -2,83 +2,91 @@
 
 > **Type naturally. Learn effortlessly.**
 
-## Current macOS implementation
+## Local macOS MVP status
 
-LinguaFlow is now a native macOS InputMethodKit input source. The current
-experimental engine combines librime for Pinyin decoding with LinguaFlow's
-translation and learning interface.
+The current local build is a native InputMethodKit input method with:
 
-Current capabilities:
+- a read-only SQLite V2 lexicon containing 184,983 Chinese lexemes, 199,462
+  structured senses, and 216,100 English glosses sourced from CC-CEDICT V2;
+- librime-first continuous pinyin decoding, such as `nihao` and
+  `woxiangqubeijing`, with LinguaFlow heuristics supplementing rather than
+  replacing librime's initial candidate order;
+- five candidates per page, number-key selection, paging, cursor editing, and Chinese punctuation;
+- separate exposure and selection counters for future learning and ranking features;
+- English candidate definitions imported from CC-CEDICT, with manually reviewed
+  translations taking precedence for the seed records.
+- offline English autocomplete backed by Peter Norvig's 333,333-word frequency
+  list; existing bilingual entries retain priority so their Chinese glosses stay
+  visible, while unmatched words remain selectable as English output.
+- an offline Tatoeba example index containing 52,747 sentence pairs and 242,436
+  term links, plus a small reviewed phrase layer used before general examples.
+- hover vocabulary cards: resting on an English translation for 500 ms opens a
+  structured learning card backed by the local macOS Dictionary, with a 250 ms
+  grace period for moving between the candidate and card.
+- local pronunciation: double-clicking an English translation speaks it with
+  Apple's on-device speech synthesizer without committing the Chinese candidate.
 
-- offline librime decoding with the bundled rime-ice dictionaries;
-- continuous full Pinyin, initials, apostrophe boundaries, sentence decoding,
-  completion, and common typo tolerance;
-- a generated read-only SQLite lexicon with about 200,000 Chinese source
-  entries and 67,000 English definitions;
-- a compact five-item candidate panel and an expandable three-column panel;
-- number-key selection, arrow-key navigation, paging, cursor editing, Chinese
-  punctuation, and caret-relative panel placement;
-- English translations below Chinese candidates, with CC-CEDICT and manually
-  reviewed seed translations used as metadata;
-- separate local exposure and actual-selection counters.
+## Hover vocabulary cards
 
-### Candidate ordering contract
+Only the English translation line is a hover target; the Chinese candidate does
+not open a card. Dictionary lookup uses Apple's public `DCSCopyTextDefinition`
+API on a background queue and caches both hits and misses for the lifetime of the
+input method. CC-CEDICT glosses are normalized into useful local dictionary
+headwords by splitting alternatives and removing usage labels and infinitive or
+article prefixes. Up to three matching definitions can be combined in one card.
+The card parses the local dictionary's rich text into a clear headword header,
+pronunciation and part of speech when available, a prominent Chinese meaning,
+an English definition, numbered examples, and a related phrases / idioms module.
+Its fixed section navigation scrolls directly to definitions, examples, or
+phrases and highlights the active button. Dense phrase text is parsed into
+separate expression rows with category, definition, and example information.
+Terms absent from the user's installed dictionaries still retain a useful Chinese
+meaning and a clear local-data status. Long content scrolls inside the card while
+its header and source remain visible, and the top-right close button dismisses it.
+Changing or hiding the candidate list cancels pending hover work and closes the
+card.
 
-Candidate ordering is deliberately split into a system baseline and gentle
-personal adaptation:
+## Candidate pronunciation
 
-1. With no matching user history, the Chinese candidate sequence is exactly
-   the order returned by librime.
-2. SQLite frequency, translation availability, Seen count, and alternate
-   segmentation must not move supplemental candidates ahead of librime's main
-   sequence.
-3. `Seen` is only an exposure counter displayed for learning; it never affects
-   ranking.
-4. Actual committed selections may move a candidate upward, but use a
-   square-root/decaying bonus so old counts cannot overwhelm librime's common
-   order.
-5. Selection learning is keyed by normalized input plus Chinese candidate. A
-   selection of `吧` under `ba` must not promote `吧` for `bei`.
+Double-click only the translation line to pronounce it. LinguaFlow uses
+`AVSpeechSynthesizer` locally, stops the current utterance before starting a new
+one, and selects a voice from each candidate's BCP-47 `targetLanguage` (specific
+locale first, then its base language). Empty translations and unavailable voices
+fail silently. A short utterance may continue when the candidate panel hides; it
+is stopped when the input controller closes. The pronunciation controller also
+exposes a local `onPronunciationPlayed` hook for future learning events, with no
+remote analytics or network calls.
 
-The two local stores are:
+## Input surface and motion design
 
-```text
-~/Library/Application Support/LinguaFlow/exposureCounts.v1.json
-~/Library/Application Support/LinguaFlow/selectionCounts.v1.json
-```
+The candidate panel and vocabulary card share one translucent macOS glass
+surface: ultra-thin material, restrained directional highlight, a fine luminous
+edge, and a soft shadow. Translation hover feedback uses a fixed-size hit area
+and a short ease-out transition so rows never jump. While speech is active, a
+reserved speaker indicator appears beside the translation and disappears from
+the synthesizer's real completion callback.
 
-They contain candidate identifiers and integer counters only. LinguaFlow does
-not store sentences, application names, or timestamps, and candidate lookup
-does not require a network connection.
+Only the temporary vocabulary card receives ambient motion: a slow 1–2 point
+vertical drift plus a very small border/shadow breathing cycle. Entrance and
+dismissal use short non-spring opacity, scale, and offset transitions. macOS
+Reduce Motion disables continuous drift, scale, and positional animation while
+preserving functional opacity feedback.
 
-### Build, test, and install
+Build and install locally with:
 
 ```sh
-./script/build_and_run.sh --test
 ./script/build_and_run.sh --install-ime
 ```
 
-`--install-ime` builds, signs for local development, installs to
-`~/Library/Input Methods/LinguaFlow.app`, registers the input source, and
-restarts the input method service. After installation, switch once to another
-input source and back to LinguaFlow if macOS still has an older process cached.
+The install command also places a Finder- and Launchpad-visible
+**LinguaFlow.app** in `/Applications`. Opening it launches the preferences
+window. The input method service remains installed separately in the current
+user's `~/Library/Input Methods` folder.
 
-### Handoff for a new Codex task
-
-Before changing behavior in a new task:
-
-1. Read this section and `THIRD_PARTY_NOTICES.md`.
-2. Check `git status --short --branch` and recent commits; do not overwrite
-   another contributor's uncommitted work.
-3. Treat librime's returned order as the initial Chinese ranking.
-4. Keep exposure (`Seen`) separate from actual selection learning.
-5. Run the complete test suite and install locally before reporting an input
-   method fix.
-6. Do not push to GitHub unless the user explicitly requests it.
-
-The imported rime-ice data is GPL-3.0 and CC-CEDICT is CC BY-SA 4.0. Review
-the distribution, attribution, and commercial licensing strategy before
-shipping binaries or a combined dictionary database.
+After installation, select **LinguaFlow** from the macOS input menu and test in
+TextEdit. The locally imported rime-ice data is GPL-3.0; review the distribution
+and licensing strategy before publishing a binary or committing the generated
+database.
 
 LinguaFlow is a multilingual input method designed to turn everyday typing into effortless language learning.
 
@@ -342,12 +350,12 @@ Users can switch between profiles depending on their needs.
 The first working milestone is now a real macOS input source, not a fixed
 translation window. It is listed beside Apple's input sources and receives
 keystrokes only while the user has selected LinguaFlow from the input menu.
-The current input engine uses librime and bundled rime-ice tables for Chinese
-candidate generation, while the offline SQLite lexicon supplies translation
-metadata and supplemental fallback entries. Its candidate panel follows the
-active text caret and shows Chinese, English translation, and Seen count. Seen
-records candidate exposure. Actual commits are stored separately as selection
-counts and gently adapt librime's baseline order.
+The MVP contains an extensible offline SQLite lexicon seeded with five pinyin
+groups (`huiyi`, `anpai`, `yanqi`, `shenqing`, and `fangfa`). Its candidate
+panel follows the active text caret and shows Chinese, English translation,
+and Seen count. Seen records candidate exposure. Actual commits are stored
+separately as selection counts and influence ranking without replacing system
+frequency.
 
 ## Open and run
 
@@ -374,12 +382,11 @@ Setup app, click “安装输入法”, then go to **System Settings → Keyboar
 Input → Edit** and add LinguaFlow. No administrator password or sensitive
 privacy permission is required. Local development signing uses the first
 available Apple Development identity; Developer ID signing, DMG packaging,
-and notarization are later productization milestones.
+notarization, and a complete pinyin engine are later milestones.
 
-The editable LinguaFlow seed records live in `LexiconSource/*.tsv`; imported
-dictionary data and license notices live under `LexiconSource/External`, and
-the librime schema lives under `LexiconSource/Rime`.
-`script/build_lexicon.swift` compiles the applicable sources into the read-only
+The editable source of the built-in dictionary lives in `LexiconSource/`,
+including the attributed Norvig English frequency list in `External/`.
+`script/build_lexicon.swift` compiles those files into the read-only
 `LinguaFlow.app/Contents/Resources/linguaflow.sqlite`; do not edit the database
 binary by hand.
 
@@ -1336,14 +1343,17 @@ The ultimate goal is not to make users spend more time studying.
 It is to make them **learn more from the time they already spend typing**.
 
 > **LinguaFlow — Type naturally. Learn effortlessly.**
+> """
+> from pathlib import Path
+> p = Path("/mnt/data/README.md")
+> p.write_text(content, encoding="utf-8")
+> print(p)
 
 ---
 
-# Development notes
+# Prototype Development
 
-`LinguaFlowPrototype` is the setup and development host app. The actual system
-input source is the embedded `LinguaFlow.app`, built by the
-`LinguaFlowInputMethod` target.
+`LinguaFlowPrototype` is the first native macOS SwiftUI visual prototype. It simulates candidate translation and Micro-Recall inside its own window; it is not yet a system input method.
 
 ## Requirements
 
@@ -1374,15 +1384,12 @@ The script selects the full Xcode installation locally, so it does not require a
 ./script/build_and_run.sh --verify
 ```
 
-Useful smoke-test inputs for the installed input method include:
+Try these inputs in the prototype:
 
 ```text
-nihao · xian · xuanfu · nibangw · zheggai · ba · bei · dian
+huiyi · anpai · yanqi · shenqing · fangfa
 ```
 
-Space commits the selected candidate. Return commits the raw Latin composition.
-Candidate selection increments the selection store; merely showing a candidate
-increments only its exposure/Seen store.
+Press Return to output the first candidate and increase its Seen count. You can also click any Chinese candidate to record that specific candidate.
 
-All candidate data and learning counters stay on the Mac. The input method makes
-no lookup-time network requests and requests no privacy-sensitive permissions.
+All candidate data and Seen counts stay on the Mac. This prototype makes no network requests and requests no privacy-sensitive permissions.

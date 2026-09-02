@@ -53,6 +53,27 @@ if CommandLine.arguments.count == 3, CommandLine.arguments[1] == "--select" {
             continue
         }
 
+        let bundleIdentifier = property(kTISPropertyBundleID, from: source) as? String
+        var parentSource: TISInputSource?
+        if let bundleIdentifier, bundleIdentifier != sourceIdentifier {
+            for case let candidateSource as TISInputSource in sources {
+                let candidateIdentifier = property(
+                    kTISPropertyInputSourceID,
+                    from: candidateSource
+                ) as? String
+                if candidateIdentifier == bundleIdentifier {
+                    parentSource = candidateSource
+                    break
+                }
+            }
+        }
+        if let parentSource {
+            let parentEnableStatus = TISEnableInputSource(parentSource)
+            guard parentEnableStatus == noErr else {
+                fail("TISEnableInputSource for parent failed with status \(parentEnableStatus)")
+            }
+        }
+
         let enableStatus = TISEnableInputSource(source)
         guard enableStatus == noErr else {
             fail("TISEnableInputSource failed with status \(enableStatus)")
@@ -61,6 +82,12 @@ if CommandLine.arguments.count == 3, CommandLine.arguments[1] == "--select" {
         let selectionStatus = TISSelectInputSource(source)
         guard selectionStatus == noErr else {
             fail("TISSelectInputSource failed with status \(selectionStatus)")
+        }
+
+        let selectedSource = TISCopyCurrentKeyboardInputSource().takeRetainedValue()
+        let selectedIdentifier = property(kTISPropertyInputSourceID, from: selectedSource) as? String
+        guard selectedIdentifier == expectedSourceIdentifier else {
+            fail("macOS did not retain the selected input source; current source is \(selectedIdentifier ?? "unknown")")
         }
 
         print("Selected input source: \(sourceIdentifier)")

@@ -48,27 +48,35 @@ public struct CompositionStateMachine: Sendable {
     public private(set) var pageIndex = 0
     public let pageSize = 5
     private let decoder: any CandidateDecoding
+    public let direction: LanguageDirection
     private var selectionCounts: [String: Int]
 
     public init(
         lexicon: any LexiconRepository = CandidateCatalog.repository,
         targetLanguage: String = "en",
+        direction: LanguageDirection = .chineseToEnglish,
         selectionCounts: [String: Int] = [:]
     ) {
         decoder = PinyinDecoder(lexicon: lexicon, targetLanguage: targetLanguage)
+        self.direction = direction
         self.selectionCounts = selectionCounts
     }
 
     public init(
         decoder: any CandidateDecoding,
+        direction: LanguageDirection = .chineseToEnglish,
         selectionCounts: [String: Int] = [:]
     ) {
         self.decoder = decoder
+        self.direction = direction
         self.selectionCounts = selectionCounts
     }
 
     public var allCandidates: [Candidate] {
-        CandidateRanker.rank(
+        if direction == .englishToChinese {
+            return decoder.candidates(for: buffer, limit: 50)
+        }
+        return CandidateRanker.rank(
             decoder.candidates(for: buffer, limit: 50),
             for: buffer,
             selectionCounts: selectionCounts
@@ -76,7 +84,9 @@ public struct CompositionStateMachine: Sendable {
     }
 
     public var displayedBuffer: String {
-        PinyinNormalizer.formattedComposition(buffer)
+        direction == .englishToChinese
+            ? buffer
+            : PinyinNormalizer.formattedComposition(buffer)
     }
 
     public var candidates: [Candidate] {
@@ -227,7 +237,9 @@ public struct CompositionStateMachine: Sendable {
 
     private func compositionUpdate() -> Transition {
         let currentCandidates = candidates
-        let display = PinyinNormalizer.compositionDisplay(buffer, rawCursor: cursor)
+        let display = direction == .englishToChinese
+            ? (text: buffer, cursor: cursor)
+            : PinyinNormalizer.compositionDisplay(buffer, rawCursor: cursor)
         var effects: [Effect] = [.updateMarkedText(display.text, cursor: display.cursor)]
         if currentCandidates.isEmpty {
             effects.append(.hideCandidates)
@@ -238,16 +250,16 @@ public struct CompositionStateMachine: Sendable {
     }
 
     private mutating func finish(candidate: Candidate) -> Transition {
-        if consumePartialCandidateIfPossible(candidate) {
+        if direction == .chineseToEnglish, consumePartialCandidateIfPossible(candidate) {
             let update = compositionUpdate()
             return Transition(
-                effects: [.insertText(candidate.sourceText)] + update.effects,
+                effects: [.insertText(candidate.commitText)] + update.effects,
                 committedCandidate: candidate
             )
         }
         reset()
         return Transition(
-            effects: [.insertText(candidate.sourceText), .hideCandidates],
+            effects: [.insertText(candidate.commitText), .hideCandidates],
             committedCandidate: candidate
         )
     }

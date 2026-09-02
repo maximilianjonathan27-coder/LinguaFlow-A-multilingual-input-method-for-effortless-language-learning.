@@ -11,7 +11,8 @@ final class LinguaFlowInputController: IMKInputController {
         category: "InputController"
     )
     private var stateMachine: CompositionStateMachine
-    private let usesRime: Bool
+    private let lexicon: SQLiteLexicon?
+    private var usesRime: Bool
     private lazy var exposureStore = ExposureStore()
     private lazy var selectionStore = SelectionStore()
     private var lastExposedCandidateIDs: [String] = []
@@ -28,29 +29,16 @@ final class LinguaFlowInputController: IMKInputController {
     }()
 
     override init!(server: IMKServer!, delegate: Any!, client inputClient: Any!) {
-        if let databaseURL = Bundle.main.url(forResource: "linguaflow", withExtension: "sqlite"),
-           let sqliteLexicon = try? SQLiteLexicon(databaseURL: databaseURL) {
-            let sharedDataURL = Bundle.main.resourceURL?
-                .appendingPathComponent("Rime", isDirectory: true)
-            let userDataURL = FileManager.default.urls(
-                for: .applicationSupportDirectory,
-                in: .userDomainMask
-            ).first?
-                .appendingPathComponent("LinguaFlow", isDirectory: true)
-                .appendingPathComponent("Rime", isDirectory: true)
-            if let sharedDataURL,
-               let userDataURL,
-               let rimeDecoder = RimeHybridDecoder(
-                   sharedDataURL: sharedDataURL,
-                   userDataURL: userDataURL,
-                   lexicon: sqliteLexicon
-               ) {
-                stateMachine = CompositionStateMachine(decoder: rimeDecoder)
-                usesRime = true
-            } else {
-                stateMachine = CompositionStateMachine(lexicon: sqliteLexicon)
-                usesRime = false
-            }
+        let loadedLexicon = Bundle.main.url(forResource: "linguaflow", withExtension: "sqlite")
+            .flatMap { try? SQLiteLexicon(databaseURL: $0) }
+        lexicon = loadedLexicon
+        if let loadedLexicon {
+            let configuration = Self.makeStateMachine(
+                lexicon: loadedLexicon,
+                direction: LanguageDirectionStore.shared.current()
+            )
+            stateMachine = configuration.stateMachine
+            usesRime = configuration.usesRime
         } else {
             stateMachine = CompositionStateMachine()
             usesRime = false
@@ -178,9 +166,8 @@ final class LinguaFlowInputController: IMKInputController {
             if character.isASCII, character.isLetter
                 || character == "'" && !stateMachine.buffer.isEmpty {
                 handled = apply(stateMachine.handle(.insertLetter(character)), to: inputClient)
-            } else if let punctuation = PinyinNormalizer.chinesePunctuation(
-                for: String(character)
-            ) {
+            } else if stateMachine.direction == .chineseToEnglish,
+                      let punctuation = PinyinNormalizer.chinesePunctuation(for: String(character)) {
                 handled = apply(stateMachine.handle(.punctuation(punctuation)), to: inputClient)
             } else {
                 return false
@@ -205,6 +192,7 @@ final class LinguaFlowInputController: IMKInputController {
     override func activateServer(_ sender: Any!) {
         exposureStore.refresh()
         selectionStore.refresh()
+        refreshDirectionIfNeeded()
         stateMachine.updateSelectionCounts(selectionStore.counts)
         super.activateServer(sender)
     }
@@ -226,6 +214,7 @@ final class LinguaFlowInputController: IMKInputController {
 
     override func inputControllerWillClose() {
         candidatePanel.hide()
+        candidatePanel.stopPronunciation()
         super.inputControllerWillClose()
     }
 
@@ -275,7 +264,8 @@ final class LinguaFlowInputController: IMKInputController {
             }
         }
 
-        if let punctuation = PinyinNormalizer.chinesePunctuation(for: producedText) {
+        if stateMachine.direction == .chineseToEnglish,
+           let punctuation = PinyinNormalizer.chinesePunctuation(for: producedText) {
             return .punctuation(punctuation)
         }
 
@@ -350,6 +340,10 @@ final class LinguaFlowInputController: IMKInputController {
 
     private func scheduleSentenceTranslation(for candidates: [Candidate]) {
         pendingTranslationTask?.cancel()
+        guard stateMachine.direction == .chineseToEnglish else {
+            pendingTranslationTask = nil
+            return
+        }
         let query = stateMachine.displayedBuffer
         let requests = sentenceTranslator.requests(from: candidates)
         guard !requests.isEmpty else {
@@ -377,10 +371,12 @@ final class LinguaFlowInputController: IMKInputController {
         // IMK expects an index relative to the active marked-text session here,
         // not the document-relative selectedRange. Passing selectedRange.location
         // makes many web editors return an empty rectangle.
-        let displayCursor = PinyinNormalizer.compositionDisplay(
-            stateMachine.buffer,
-            rawCursor: stateMachine.cursor
-        ).cursor
+        let displayCursor = stateMachine.direction == .englishToChinese
+            ? stateMachine.cursor
+            : PinyinNormalizer.compositionDisplay(
+                stateMachine.buffer,
+                rawCursor: stateMachine.cursor
+            ).cursor
         var indexes = [displayCursor]
         if displayCursor > 0 { indexes.append(displayCursor - 1) }
         indexes.append(0)
@@ -434,6 +430,49 @@ final class LinguaFlowInputController: IMKInputController {
     private func selectCandidate(id: String) {
         guard let inputClient = client() else { return }
         _ = apply(stateMachine.handle(.selectCandidateID(id)), to: inputClient)
+    }
+
+    private func refreshDirectionIfNeeded() {
+        let direction = LanguageDirectionStore.shared.current()
+        guard stateMachine.direction != direction, let lexicon else { return }
+        let configuration = Self.makeStateMachine(lexicon: lexicon, direction: direction)
+        stateMachine = configuration.stateMachine
+        stateMachine.updateSelectionCounts(selectionStore.counts)
+        usesRime = configuration.usesRime
+    }
+
+    private static func makeStateMachine(
+        lexicon: SQLiteLexicon,
+        direction: LanguageDirection
+    ) -> (stateMachine: CompositionStateMachine, usesRime: Bool) {
+        if direction == .englishToChinese {
+            return (
+                CompositionStateMachine(
+                    decoder: EnglishCandidateDecoder(lexicon: lexicon),
+                    direction: direction
+                ),
+                false
+            )
+        }
+
+        let sharedDataURL = Bundle.main.resourceURL?
+            .appendingPathComponent("Rime", isDirectory: true)
+        let userDataURL = FileManager.default.urls(
+            for: .applicationSupportDirectory,
+            in: .userDomainMask
+        ).first?
+            .appendingPathComponent("LinguaFlow", isDirectory: true)
+            .appendingPathComponent("Rime", isDirectory: true)
+        if let sharedDataURL,
+           let userDataURL,
+           let rimeDecoder = RimeHybridDecoder(
+               sharedDataURL: sharedDataURL,
+               userDataURL: userDataURL,
+               lexicon: lexicon
+           ) {
+            return (CompositionStateMachine(decoder: rimeDecoder), true)
+        }
+        return (CompositionStateMachine(lexicon: lexicon), false)
     }
 
 }

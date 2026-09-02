@@ -209,11 +209,6 @@ final class LexiconTests: XCTestCase {
     }
 
     func testSQLiteLexiconReturnsTranslatedCandidates() throws {
-        let repositoryRoot = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-        let databaseURL = repositoryRoot
-            .appendingPathComponent("LinguaFlowInputMethod/Resources/linguaflow.sqlite")
         let lexicon = try SQLiteLexicon(databaseURL: databaseURL)
 
         let candidates = lexicon.candidates(for: "HUI YI", limit: 10)
@@ -223,6 +218,30 @@ final class LexiconTests: XCTestCase {
         XCTAssertTrue(candidates.contains { $0.sourceText == "会意" })
         XCTAssertEqual(candidates.first?.translation, "meeting")
         XCTAssertEqual(candidates.first?.targetLanguage, "en")
+    }
+
+    func testEnglishModeUsesIndependentReverseLookup() throws {
+        let lexicon = try SQLiteLexicon(databaseURL: databaseURL)
+        let candidates = lexicon.englishCandidates(for: "meet", limit: 10)
+
+        let meeting = try XCTUnwrap(candidates.first { $0.sourceText == "meeting" })
+        XCTAssertEqual(meeting.translation, "会议")
+        XCTAssertEqual(meeting.sourceLanguage, .english)
+        XCTAssertEqual(meeting.targetLanguage, "zh-Hans")
+    }
+
+    func testEnglishCompositionDoesNotApplyPinyinFormatting() throws {
+        let lexicon = try SQLiteLexicon(databaseURL: databaseURL)
+        var stateMachine = CompositionStateMachine(
+            decoder: EnglishCandidateDecoder(lexicon: lexicon),
+            direction: .englishToChinese
+        )
+
+        for letter in "meet" {
+            _ = stateMachine.handle(.insertLetter(letter))
+        }
+        XCTAssertEqual(stateMachine.displayedBuffer, "meet")
+        XCTAssertTrue(stateMachine.allCandidates.contains { $0.sourceText == "meeting" })
     }
 
     func testSelectionFrequencyCanPromoteARegularCandidate() {
@@ -669,7 +688,18 @@ final class LexiconTests: XCTestCase {
     }
 
     private var databaseURL: URL {
-        URL(fileURLWithPath: #filePath)
+        if let bundledURL = Bundle(for: LexiconTests.self).url(
+            forResource: "linguaflow",
+            withExtension: "sqlite"
+        ) {
+            return bundledURL
+        }
+        if let overridePath = ProcessInfo.processInfo.environment["LINGUAFLOW_TEST_DATABASE"],
+           !overridePath.isEmpty {
+            return URL(fileURLWithPath: overridePath)
+        }
+
+        return URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
             .appendingPathComponent("LinguaFlowInputMethod/Resources/linguaflow.sqlite")

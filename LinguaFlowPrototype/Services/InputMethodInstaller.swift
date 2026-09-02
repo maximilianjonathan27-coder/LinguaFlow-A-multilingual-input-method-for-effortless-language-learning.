@@ -20,6 +20,7 @@ final class InputMethodInstaller {
 
     private(set) var status: Status = .notInstalled
     private(set) var isInputMethodEnabled = false
+    private(set) var isInputMethodSelected = false
     private(set) var enableErrorMessage: String?
 
     private let fileManager: FileManager
@@ -40,6 +41,7 @@ final class InputMethodInstaller {
     }
 
     func refreshStatus() {
+        isInputMethodSelected = currentInputSourceIdentifier() == Self.inputModeIdentifier
         let parentEnabled = inputSource(identifier: Self.inputMethodBundleIdentifier).map {
             booleanProperty(kTISPropertyInputSourceIsEnabled, from: $0)
         } ?? false
@@ -74,6 +76,9 @@ final class InputMethodInstaller {
             return
         }
 
+        let shouldRestoreSelection = currentInputSourceIdentifier()?.hasPrefix(
+            Self.inputMethodBundleIdentifier
+        ) == true
         status = .installing
         let directory = installedURL.deletingLastPathComponent()
         let identifier = UUID().uuidString
@@ -113,6 +118,10 @@ final class InputMethodInstaller {
                 throw InstallerError.registrationFailed(registrationStatus)
             }
 
+            if shouldRestoreSelection {
+                try activateInstalledInputMethod()
+            }
+
             refreshStatus()
         } catch {
             try? removeIfPresent(stagingURL)
@@ -135,25 +144,38 @@ final class InputMethodInstaller {
             return
         }
 
+        do {
+            try activateInstalledInputMethod()
+            refreshStatus()
+        } catch {
+            enableErrorMessage = error.localizedDescription
+        }
+    }
+
+    private func activateInstalledInputMethod() throws {
         guard let parentSource = inputSource(identifier: Self.inputMethodBundleIdentifier),
               let modeSource = inputSource(identifier: Self.inputModeIdentifier) else {
-            enableErrorMessage = "macOS 尚未识别 LinguaFlow，请重新安装后再试。"
-            return
+            throw InstallerError.inputSourceUnavailable
         }
 
         let parentResult = TISEnableInputSource(parentSource)
         guard parentResult == noErr else {
-            enableErrorMessage = "macOS 无法启用 LinguaFlow（错误码 \(parentResult)）。"
-            return
+            throw InstallerError.enableFailed(parentResult)
         }
 
         let modeResult = TISEnableInputSource(modeSource)
         guard modeResult == noErr else {
-            enableErrorMessage = "macOS 无法启用 LinguaFlow 拼音模式（错误码 \(modeResult)）。"
-            return
+            throw InstallerError.enableModeFailed(modeResult)
         }
 
-        refreshStatus()
+        guard NSWorkspace.shared.open(installedURL) else {
+            throw InstallerError.launchFailed
+        }
+
+        let selectionResult = TISSelectInputSource(modeSource)
+        guard selectionResult == noErr else {
+            throw InstallerError.selectionFailed(selectionResult)
+        }
     }
 
     private func validInputMethod(at url: URL) -> Bool {
@@ -188,6 +210,14 @@ final class InputMethodInstaller {
         return Unmanaged<TISInputSource>.fromOpaque(pointer).takeUnretainedValue()
     }
 
+    private func currentInputSourceIdentifier() -> String? {
+        let source = TISCopyCurrentKeyboardInputSource().takeRetainedValue()
+        guard let pointer = TISGetInputSourceProperty(source, kTISPropertyInputSourceID) else {
+            return nil
+        }
+        return Unmanaged<AnyObject>.fromOpaque(pointer).takeUnretainedValue() as? String
+    }
+
     private func booleanProperty(_ key: CFString, from source: TISInputSource) -> Bool {
         guard let pointer = TISGetInputSourceProperty(source, key) else {
             return false
@@ -206,6 +236,11 @@ final class InputMethodInstaller {
 private enum InstallerError: LocalizedError {
     case invalidEmbeddedBundle
     case registrationFailed(OSStatus)
+    case inputSourceUnavailable
+    case enableFailed(OSStatus)
+    case enableModeFailed(OSStatus)
+    case launchFailed
+    case selectionFailed(OSStatus)
 
     var errorDescription: String? {
         switch self {
@@ -213,6 +248,16 @@ private enum InstallerError: LocalizedError {
             "内嵌输入法无效，请重新构建 LinguaFlow Setup。"
         case let .registrationFailed(status):
             "输入法已复制，但 macOS 注册失败（错误码 \(status)）。请退出登录后重新登录。"
+        case .inputSourceUnavailable:
+            "macOS 尚未识别 LinguaFlow，请重新安装后再试。"
+        case let .enableFailed(status):
+            "macOS 无法启用 LinguaFlow（错误码 \(status)）。"
+        case let .enableModeFailed(status):
+            "macOS 无法启用 LinguaFlow 拼音模式（错误码 \(status)）。"
+        case .launchFailed:
+            "LinguaFlow 已安装，但输入法服务无法启动。"
+        case let .selectionFailed(status):
+            "LinguaFlow 已启用，但无法切换为当前输入法（错误码 \(status)）。"
         }
     }
 }
