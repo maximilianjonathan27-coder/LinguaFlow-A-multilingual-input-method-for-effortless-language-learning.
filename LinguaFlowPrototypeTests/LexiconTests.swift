@@ -430,6 +430,10 @@ final class LexiconTests: XCTestCase {
             decoder.candidates(for: "ni k y", limit: 20).first?.sourceText,
             "你可以"
         )
+        XCTAssertEqual(
+            decoder.candidates(for: "wo bu zhi d z m z", limit: 20).first?.sourceText,
+            "我不知道怎么做"
+        )
     }
 
     func testInitialCandidatesIncludeFullPhraseThenTwoAndOneCharacterPrefixes() throws {

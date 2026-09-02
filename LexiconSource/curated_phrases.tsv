@@ -29,6 +29,7 @@ curated.social.be_careful	xiao xin yi dian	小心一点	730000	Be careful.	phras
 curated.social.take_your_time	man man lai	慢慢来	720000	Take your time.	phrase	social	casual
 curated.communication.understand	wo ming bai le	我明白了	710000	I understand.	phrase	communication	neutral
 curated.communication.dont_know	wo bu zhi dao	我不知道	700000	I don't know.	phrase	communication	neutral
+curated.communication.dont_know_how_to_do_it	wo bu zhi dao zen me zuo	我不知道怎么做	699000	I don't know how to do it.	phrase	communication	neutral
 curated.communication.not_sure	wo bu que ding	我不确定	690000	I'm not sure.	phrase	communication	neutral
 curated.communication.me_too	wo ye shi	我也是	680000	Me too.	phrase	communication	casual
 curated.communication.agree	wo tong yi	我同意	670000	I agree.	phrase	communication	neutral

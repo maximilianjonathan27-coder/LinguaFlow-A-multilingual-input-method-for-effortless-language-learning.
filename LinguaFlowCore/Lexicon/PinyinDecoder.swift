@@ -52,12 +52,20 @@ public struct PinyinDecoder: CandidateDecoding, Sendable {
             limit: limit
         )
         let mixedAbbreviations = mixedAbbreviationCandidates(
-            for: normalized,
+            for: input,
+            limit: limit
+        )
+        let mixedSentences = decodedMixedSentences(
+            for: input,
             limit: limit
         )
         var results: [Candidate]
-        if exactCandidates.isEmpty, !mixedAbbreviations.isEmpty {
-            results = mixedAbbreviations
+        if exactCandidates.isEmpty, !mixedAbbreviations.isEmpty || !mixedSentences.isEmpty {
+            // A whole phrase already present in the lexicon remains the most
+            // reliable result. Sentence composition fills the important gap
+            // where full Pinyin is followed by initials, for example
+            // `wo bu zhi d z m z` -> `我不知道怎么做`.
+            results = mixedAbbreviations + mixedSentences
         } else if exactCandidates.isEmpty {
             let decoded = inferredSentences.isEmpty
                 ? decodedSentences(for: normalized, limit: limit)
@@ -124,7 +132,7 @@ public struct PinyinDecoder: CandidateDecoding, Sendable {
             ))
         }
 
-        results.append(contentsOf: partialPrefixCandidates(for: normalized, limit: limit))
+        results.append(contentsOf: partialPrefixCandidates(for: input, limit: limit))
         results.append(contentsOf: fallbackCharacters)
         let englishCandidates = EnglishWordCatalog.candidates(
             for: normalized,
@@ -154,6 +162,65 @@ public struct PinyinDecoder: CandidateDecoding, Sendable {
         else { return [] }
 
         return abbreviationCandidates(matching: components, limit: limit)
+    }
+
+    /// Builds a sentence from multiple lexicon entries while respecting every
+    /// explicit Pinyin boundary. This is the deterministic fallback used when
+    /// librime is unavailable, so mixed input behaves the same on another Mac.
+    private func decodedMixedSentences(for input: String, limit: Int) -> [Candidate] {
+        let components = PinyinNormalizer.segments(for: input)
+        guard components.count > 1,
+              components.contains(where: isPinyinInitial),
+              components.contains(where: { !isPinyinInitial($0) })
+        else { return [] }
+
+        var paths = Array(repeating: [Path](), count: components.count + 1)
+        paths[0] = [Path(candidates: [], score: 0)]
+
+        for start in components.indices where !paths[start].isEmpty {
+            let maximumEnd = min(components.count, start + 6)
+            for end in (start + 1)...maximumEnd {
+                let typed = Array(components[start..<end])
+                let containsInitial = typed.contains(where: isPinyinInitial)
+                let words: [Candidate]
+                if containsInitial {
+                    let initials = typed.compactMap(\.first).map(String.init).joined()
+                    words = lexicon.abbreviationCandidates(
+                        for: initials,
+                        targetLanguage: targetLanguage,
+                        limit: 24
+                    ).filter {
+                        isChineseCandidate($0)
+                            && componentsMatch(typed, candidateSyllables($0))
+                    }
+                } else {
+                    words = lexicon.candidates(
+                        for: typed.joined(),
+                        targetLanguage: targetLanguage,
+                        limit: 8
+                    ).filter(isChineseCandidate)
+                }
+                guard !words.isEmpty else { continue }
+
+                for path in paths[start].prefix(12) {
+                    for word in words.prefix(8) {
+                        let frequencyScore = Int64(log(Double(max(1, word.frequency))) * 1_000)
+                        let cohesionBonus = Int64(max(0, word.sourceText.count - 1)) * 3_000
+                        paths[end].append(Path(
+                            candidates: path.candidates + [word],
+                            score: path.score + frequencyScore + cohesionBonus - 16_000
+                        ))
+                    }
+                }
+                paths[end] = Array(paths[end].sorted { $0.score > $1.score }.prefix(18))
+            }
+        }
+
+        return paths[components.count]
+            .filter { $0.candidates.count > 1 }
+            .sorted { $0.score > $1.score }
+            .prefix(limit)
+            .map { sentenceCandidate(from: $0, input: input) }
     }
 
     /// After complete phrase candidates, a normal Pinyin IME also offers shorter
