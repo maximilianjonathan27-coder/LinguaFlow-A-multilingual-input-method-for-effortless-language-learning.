@@ -5,6 +5,7 @@ public protocol LexiconRepository: Sendable {
     func prefixCandidates(for input: String, targetLanguage: String, limit: Int) -> [Candidate]
     func abbreviationCandidates(for initials: String, targetLanguage: String, limit: Int) -> [Candidate]
     func correctionCandidates(for input: String, targetLanguage: String, limit: Int) -> [Candidate]
+    func metadata(for sourceTexts: [String], targetLanguage: String) -> [String: Candidate]
 }
 
 public extension LexiconRepository {
@@ -22,6 +23,10 @@ public extension LexiconRepository {
 
     func correctionCandidates(for input: String, limit: Int) -> [Candidate] {
         correctionCandidates(for: input, targetLanguage: "en", limit: limit)
+    }
+
+    func metadata(for sourceTexts: [String]) -> [String: Candidate] {
+        metadata(for: sourceTexts, targetLanguage: "en")
     }
 }
 
@@ -99,6 +104,24 @@ public struct InMemoryLexicon: LexiconRepository {
             .sorted { $0.frequency > $1.frequency }
             .prefix(limit)
             .map { $0 }
+    }
+
+    public func metadata(
+        for sourceTexts: [String],
+        targetLanguage: String
+    ) -> [String: Candidate] {
+        let requested = Set(sourceTexts)
+        var result: [String: Candidate] = [:]
+        for candidate in candidatesByInput.values.flatMap({ $0 }) where
+            requested.contains(candidate.sourceText)
+                && candidate.targetLanguage == targetLanguage
+                && !candidate.translation.isEmpty
+        {
+            if result[candidate.sourceText] == nil {
+                result[candidate.sourceText] = candidate
+            }
+        }
+        return result
     }
 }
 

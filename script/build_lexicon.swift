@@ -56,11 +56,43 @@ let lexemes = try rows(at: sourceDirectory.appendingPathComponent("lexicon.tsv")
 let translations = try rows(at: sourceDirectory.appendingPathComponent("translations.tsv"), expectedColumns: 6).map {
     TranslationRow(id: $0[0], language: $0[1], translation: $0[2], partOfSpeech: $0[3], domain: $0[4], style: $0[5])
 }
+let curatedPhraseRows = try rows(
+    at: sourceDirectory.appendingPathComponent("curated_phrases.tsv"),
+    expectedColumns: 8
+)
+let curatedLexemes = try curatedPhraseRows.map { row in
+    guard let frequency = Int(row[3]) else {
+        throw BuildError.invalidRow(sourceDirectory.appendingPathComponent("curated_phrases.tsv"), 0)
+    }
+    return LexemeRow(id: row[0], pinyin: row[1], chinese: row[2], frequency: frequency)
+}
+let curatedTranslations = curatedPhraseRows.map { row in
+    TranslationRow(
+        id: row[0],
+        language: "en",
+        translation: row[4],
+        partOfSpeech: row[5],
+        domain: row[6],
+        style: row[7]
+    )
+}
+
+func normalizedDictionaryPinyin(_ value: String) -> String {
+    value.lowercased()
+        .replacingOccurrences(of: "u:", with: "v")
+        .replacingOccurrences(of: "ü", with: "v")
+        .filter { $0.isASCII && $0.isLetter }
+}
+
+func cedictTranslationKey(chinese: String, pinyin: String) -> String {
+    chinese + "\t" + normalizedDictionaryPinyin(pinyin)
+}
 
 func cedictTranslations(at url: URL) throws -> [String: String] {
     guard FileManager.default.fileExists(atPath: url.path) else { return [:] }
     let content = try String(contentsOf: url, encoding: .utf8)
     var translationsByChinese: [String: String] = [:]
+    var priorityByKey: [String: Int] = [:]
     let metadataPrefixes = [
         "CL:", "variant of ", "old variant of ", "archaic variant of ",
         "see ", "see also ", "used in ", "surname "
@@ -75,6 +107,7 @@ func cedictTranslations(at url: URL) throws -> [String: String] {
         let head = line[..<pinyinStart].split(whereSeparator: \.isWhitespace)
         guard head.count >= 2 else { continue }
         let chinese = String(head[1])
+        let pinyin = String(line[line.index(after: pinyinStart)..<definitionStart.lowerBound])
         let definitions = line[definitionStart.upperBound...]
             .split(separator: "/")
             .map(String.init)
@@ -87,8 +120,29 @@ func cedictTranslations(at url: URL) throws -> [String: String] {
         let compact = definition.count > 120
             ? String(definition.prefix(117)) + "…"
             : definition
-        if translationsByChinese[chinese] == nil {
-            translationsByChinese[chinese] = compact
+        let lowercasedDefinitions = definitions.map { $0.lowercased() }
+        var priority = 100
+        let lowercasedDefinition = definition.lowercased()
+        if lowercasedDefinition.hasPrefix("variant of ")
+            || lowercasedDefinition.hasPrefix("old variant of ") {
+            priority -= 500
+        }
+        if pinyin.first?.isUppercase == true { priority -= 200 }
+        if lowercasedDefinition.hasPrefix("surname ") { priority -= 300 }
+        if lowercasedDefinition.hasPrefix("(bound form)") { priority -= 40 }
+        if lowercasedDefinition.hasPrefix("(literary)") { priority -= 20 }
+        if lowercasedDefinitions.contains(where: { $0.hasPrefix("cl:") }) {
+            priority += 20
+        }
+        let key = cedictTranslationKey(chinese: chinese, pinyin: pinyin)
+        if priority > priorityByKey[key, default: Int.min] {
+            translationsByChinese[key] = compact
+            priorityByKey[key] = priority
+        }
+        let fallbackKey = chinese + "\t*"
+        if priority > priorityByKey[fallbackKey, default: Int.min] {
+            translationsByChinese[fallbackKey] = compact
+            priorityByKey[fallbackKey] = priority
         }
     }
     return translationsByChinese
@@ -154,14 +208,18 @@ let commonCharacters = try rimeIceRows(
     at: sourceDirectory.appendingPathComponent("External/rime_ice_8105.dict.yaml"),
     maximumCount: 20_000
 )
-let allLexemes = lexemes + commonCharacters + externalLexemes
+// Curated entries precede imported rows so their stable identifiers and
+// reviewed metadata win when the same Pinyin/Chinese pair exists upstream.
+let allLexemes = lexemes + curatedLexemes + commonCharacters + externalLexemes
 let cedict = try cedictTranslations(
     at: sourceDirectory.appendingPathComponent("External/cedict_ts.u8")
 )
-let seedTranslationIDs = Set(translations.map(\.id))
+let reviewedTranslations = translations + curatedTranslations
+let seedTranslationIDs = Set(reviewedTranslations.map(\.id))
 var generatedTranslationsByID: [String: TranslationRow] = [:]
 for lexeme in allLexemes where !seedTranslationIDs.contains(lexeme.id) {
-    guard let translation = cedict[lexeme.chinese] else { continue }
+    let key = cedictTranslationKey(chinese: lexeme.chinese, pinyin: lexeme.pinyin)
+    guard let translation = cedict[key] ?? cedict[lexeme.chinese + "\t*"] else { continue }
     generatedTranslationsByID[lexeme.id] = TranslationRow(
         id: lexeme.id,
         language: "en",
@@ -171,7 +229,7 @@ for lexeme in allLexemes where !seedTranslationIDs.contains(lexeme.id) {
         style: "neutral"
     )
 }
-let allTranslations = translations + generatedTranslationsByID.values.sorted { $0.id < $1.id }
+let allTranslations = reviewedTranslations + generatedTranslationsByID.values.sorted { $0.id < $1.id }
 
 try FileManager.default.createDirectory(
     at: outputURL.deletingLastPathComponent(),
@@ -217,6 +275,8 @@ try execute("""
         ON lexemes(pinyin_initials, frequency DESC);
     CREATE INDEX lexemes_length_frequency
         ON lexemes(pinyin_length, frequency DESC);
+    CREATE INDEX lexemes_chinese_frequency
+        ON lexemes(chinese, frequency DESC);
     CREATE TABLE translations (
         lexeme_id TEXT NOT NULL REFERENCES lexemes(stable_id),
         target_language TEXT NOT NULL,

@@ -1,0 +1,215 @@
+stable_id	pinyin	chinese	frequency	translation	part_of_speech	domain	style
+curated.greeting.good_morning	zao shang hao	早上好	990000	Good morning.	phrase	social	neutral
+curated.greeting.good_afternoon	xia wu hao	下午好	980000	Good afternoon.	phrase	social	neutral
+curated.greeting.good_evening	wan shang hao	晚上好	970000	Good evening.	phrase	social	neutral
+curated.greeting.good_night	wan an	晚安	960000	Good night.	phrase	social	neutral
+curated.greeting.long_time_no_see	hao jiu bu jian	好久不见	950000	Long time no see.	phrase	social	casual
+curated.greeting.how_have_you_been	zui jin zen me yang	最近怎么样	940000	How have you been?	phrase	social	casual
+curated.greeting.nice_to_meet_you	hen gao xing ren shi ni	很高兴认识你	930000	Nice to meet you.	phrase	social	neutral
+curated.greeting.see_you_later	hui tou jian	回头见	920000	See you later.	phrase	social	casual
+curated.greeting.see_you_tomorrow	ming tian jian	明天见	910000	See you tomorrow.	phrase	social	neutral
+curated.greeting.safe_trip	yi lu ping an	一路平安	900000	Have a safe trip.	phrase	travel	neutral
+curated.greeting.welcome_back	huan ying hui lai	欢迎回来	890000	Welcome back.	phrase	social	neutral
+curated.social.thank_you_help	xie xie ni de bang zhu	谢谢你的帮助	880000	Thank you for your help.	phrase	social	neutral
+curated.social.you_are_welcome	bu ke qi	不客气	870000	You're welcome.	phrase	social	neutral
+curated.social.no_worries	mei guan xi	没关系	860000	That's okay.	phrase	social	neutral
+curated.social.sorry	bu hao yi si	不好意思	850000	Sorry about that.	phrase	social	neutral
+curated.social.excuse_me	da rao yi xia	打扰一下	840000	Excuse me.	phrase	social	neutral
+curated.social.please_wait	qing shao deng	请稍等	830000	Please wait a moment.	phrase	social	polite
+curated.social.thanks_for_trouble	ma fan ni le	麻烦你了	820000	Thanks for your trouble.	phrase	social	polite
+curated.social.hard_work	xin ku le	辛苦了	810000	Thanks for your hard work.	phrase	work	neutral
+curated.social.no_problem	mei wen ti	没问题	800000	No problem.	phrase	social	casual
+curated.social.of_course	dang ran ke yi	当然可以	790000	Of course.	phrase	social	neutral
+curated.social.is_that_ok	ke yi ma	可以吗	780000	Is that okay?	phrase	social	neutral
+curated.social.really	zhen de ma	真的吗	770000	Really?	phrase	social	casual
+curated.social.thats_great	tai hao le	太好了	760000	That's great!	phrase	social	casual
+curated.social.thats_too_bad	tai ke xi le	太可惜了	750000	That's too bad.	phrase	social	neutral
+curated.social.dont_worry	bie dan xin	别担心	740000	Don't worry.	phrase	social	neutral
+curated.social.be_careful	xiao xin yi dian	小心一点	730000	Be careful.	phrase	social	neutral
+curated.social.take_your_time	man man lai	慢慢来	720000	Take your time.	phrase	social	casual
+curated.communication.understand	wo ming bai le	我明白了	710000	I understand.	phrase	communication	neutral
+curated.communication.dont_know	wo bu zhi dao	我不知道	700000	I don't know.	phrase	communication	neutral
+curated.communication.not_sure	wo bu que ding	我不确定	690000	I'm not sure.	phrase	communication	neutral
+curated.communication.me_too	wo ye shi	我也是	680000	Me too.	phrase	communication	casual
+curated.communication.agree	wo tong yi	我同意	670000	I agree.	phrase	communication	neutral
+curated.communication.disagree	wo bu tong yi	我不同意	660000	I disagree.	phrase	communication	neutral
+curated.communication.sounds_good	ting qi lai bu cuo	听起来不错	650000	Sounds good.	phrase	communication	casual
+curated.communication.thats_right	shuo de dui	说得对	640000	That's right.	phrase	communication	casual
+curated.communication.makes_sense	you dao li	有道理	630000	That makes sense.	phrase	communication	neutral
+curated.communication.it_depends	kan qing kuang	看情况	620000	It depends.	phrase	communication	casual
+curated.communication.cant_be_helped	mei ban fa	没办法	610000	It can't be helped.	phrase	communication	casual
+curated.communication.up_to_you	sui bian ni	随便你	600000	It's up to you.	phrase	communication	casual
+curated.communication.say_again	qing zai shuo yi bian	请再说一遍	590000	Could you say that again?	phrase	communication	polite
+curated.communication.speak_slowly	qing shuo man yi dian	请说慢一点	580000	Please speak more slowly.	phrase	communication	polite
+curated.communication.what_mean	shen me yi si	什么意思	570000	What does that mean?	phrase	communication	neutral
+curated.communication.how_say	zen me shuo	怎么说	560000	How do you say it?	phrase	communication	neutral
+curated.communication.how_spell	zen me pin	怎么拼	550000	How do you spell it?	phrase	communication	neutral
+curated.communication.can_help	neng bang wo ma	能帮我吗	540000	Can you help me?	phrase	communication	polite
+curated.communication.let_me_think	rang wo xiang xiang	让我想想	530000	Let me think.	phrase	communication	casual
+curated.communication.wait_a_second	deng yi xia	等一下	520000	Wait a second.	phrase	communication	casual
+curated.communication.in_a_hurry	gan shi jian	赶时间	510000	I'm in a hurry.	phrase	daily	casual
+curated.communication.too_late	lai bu ji le	来不及了	500000	There's no time.	phrase	daily	casual
+curated.communication.convenient_now	xian zai fang bian ma	现在方便吗	490000	Is now a good time?	phrase	communication	neutral
+curated.communication.free	you kong ma	有空吗	480000	Are you free?	phrase	communication	casual
+curated.communication.keep_in_touch	bao chi lian xi	保持联系	470000	Keep in touch.	phrase	communication	neutral
+curated.communication.call_me	gei wo da dian hua	给我打电话	460000	Give me a call.	phrase	communication	neutral
+curated.communication.message_me	gei wo fa xiao xi	给我发消息	450000	Send me a message.	phrase	communication	neutral
+curated.communication.almost_there	wo ma shang dao	我马上到	440000	I'll be there soon.	phrase	daily	casual
+curated.communication.on_the_way	wo zai lu shang	我在路上	430000	I'm on my way.	phrase	daily	casual
+curated.daily.nothing	mei you shen me	没有什么	999500	Nothing.	phrase	daily	neutral
+curated.daily.yours	ni de	你的	999490	your; yours	possessive	daily	neutral
+curated.daily.mine	wo de	我的	999480	my; mine	possessive	daily	neutral
+curated.daily.want	xiang	想	999470	to want; to think about	verb	daily	neutral
+curated.daily.i_want_to	wo xiang	我想	999460	I want to; I think	phrase	daily	neutral
+curated.daily.i_want_to_drink	wo xiang he	我想喝	999450	I want to drink.	phrase	daily	neutral
+curated.daily.i_want_water	wo xiang he shui	我想喝水	999440	I want to drink some water.	phrase	daily	neutral
+curated.daily.change_it	gai yi xia	改一下	999430	Change it.	phrase	daily	neutral
+curated.daily.cover_it	gai yi xia	盖一下	999420	Cover it.	phrase	daily	neutral
+curated.pattern.i_want	wo yao	我要	999410	I want; I'd like	phrase	daily	neutral
+curated.pattern.you_can	ni ke yi	你可以	999400	You can.	phrase	daily	neutral
+curated.pattern.i_can	wo ke yi	我可以	999390	I can.	phrase	daily	neutral
+curated.pattern.can_or_not	neng bu neng	能不能	999380	Can you?; Is it possible?	phrase	daily	neutral
+curated.pattern.dont_know	bu zhi dao	不知道	999370	I don't know.	phrase	daily	neutral
+curated.pattern.dont_need	bu xu yao	不需要	999360	don't need	phrase	daily	neutral
+curated.pattern.dont_want	wo bu xiang	我不想	999350	I don't want to.	phrase	daily	neutral
+curated.pattern.cant_do	wo bu hui	我不会	999340	I can't; I don't know how	phrase	daily	neutral
+curated.pattern.cannot	wo bu neng	我不能	999330	I can't.	phrase	daily	neutral
+curated.pattern.should_not	bu ying gai	不应该	999320	shouldn't	phrase	daily	neutral
+curated.pattern.try_it	shi shi	试试	999310	Give it a try.	phrase	daily	casual
+curated.pattern.you_try	ni shi shi	你试试	999300	You should try it.	phrase	daily	casual
+curated.pattern.how_could	zen me hui	怎么会	999290	How could that be?	phrase	daily	neutral
+curated.pattern.how_can	zen me neng	怎么能	999280	How can…?	phrase	daily	neutral
+curated.pattern.are_you	ni shi bu shi	你是不是	999270	Are you…?	phrase	daily	neutral
+curated.pattern.please_dont	qing bu yao	请不要	999260	Please don't.	phrase	daily	polite
+curated.pattern.make_sure_not	qian wan bu yao	千万不要	999250	Make sure you don't.	phrase	daily	neutral
+curated.pattern.dont_understand	bu ming bai	不明白	999240	I don't understand.	phrase	daily	neutral
+curated.pattern.dont_get_it	bu dong	不懂	999230	I don't understand.	phrase	daily	neutral
+curated.pattern.not_bad	hai bu cuo	还不错	999220	Not bad.	phrase	daily	casual
+curated.pattern.pretty_good	hen bu cuo	很不错	999210	Pretty good.	phrase	daily	casual
+curated.pattern.dont_like	bu xi huan	不喜欢	999200	don't like	phrase	daily	neutral
+curated.pattern.not_easy	bu rong yi	不容易	999190	not easy	phrase	daily	neutral
+curated.pattern.impossible	bu ke neng	不可能	999180	impossible	adjective	daily	neutral
+curated.pattern.does_not_exist	bu cun zai	不存在	999170	doesn't exist	phrase	daily	neutral
+curated.pattern.not_allowed	bu yun xu	不允许	999160	not allowed	phrase	daily	neutral
+curated.pattern.not_supported	bu zhi chi	不支持	999150	not supported	phrase	work	neutral
+curated.pattern.not_suitable	bu shi he	不适合	999140	not suitable	phrase	daily	neutral
+curated.pattern.wont_affect	bu ying xiang	不影响	999130	won't affect	phrase	daily	neutral
+curated.pattern.does_not_include	bu bao kuo	不包括	999120	does not include	phrase	work	neutral
+curated.pattern.no_more_than	bu chao guo	不超过	999110	no more than	phrase	general	neutral
+curated.pattern.no_less_than	bu di yu	不低于	999100	no less than	phrase	general	neutral
+curated.pattern.not_fewer_than	bu shao yu	不少于	999090	no fewer than	phrase	general	neutral
+curated.pattern.dont_know_about	bu liao jie	不了解	999080	don't know much about	phrase	daily	neutral
+curated.pattern.dont_believe	bu xiang xin	不相信	999070	don't believe	phrase	daily	neutral
+curated.pattern.cant_see	kan bu dao	看不到	999060	can't see	phrase	daily	neutral
+curated.pattern.accidentally	bu xiao xin	不小心	999050	accidentally	adverb	daily	neutral
+curated.pattern.unwilling	bu yuan yi	不愿意	999040	don't want to; be unwilling to	phrase	daily	neutral
+curated.pattern.dare_not	bu gan	不敢	999030	dare not	phrase	daily	neutral
+curated.pattern.not_very	bu tai	不太	999020	not very	phrase	daily	neutral
+curated.pattern.no_longer	bu zai	不再	999010	no longer	phrase	daily	neutral
+curated.pattern.dont_know_either	ye bu zhi dao	也不知道	999000	I don't know either.	phrase	daily	neutral
+curated.pattern.not_actually	bing bu shi	并不是	998990	not actually	phrase	daily	neutral
+curated.pattern.rather_than	er bu shi	而不是	998980	rather than	phrase	general	neutral
+curated.pattern.different	bu tong de	不同的	998970	different	adjective	general	neutral
+curated.pattern.different_from	bu tong yu	不同于	998960	be different from	phrase	general	neutral
+curated.pattern.disagree	bu tong yi	不同意	998950	disagree	verb	daily	neutral
+curated.pattern.introduce_briefly	jie shao yi xia	介绍一下	998940	Let me introduce…	phrase	daily	neutral
+curated.pattern.take_a_look	kan yi xia	看一下	998930	Take a look.	phrase	daily	neutral
+curated.pattern.give_it_a_try	shi yi xia	试一下	998920	Give it a try.	phrase	daily	casual
+curated.pattern.ask_about	wen yi xia	问一下	998910	Ask about it.	phrase	daily	neutral
+curated.pattern.look_it_up	cha yi xia	查一下	998900	Look it up.	phrase	daily	neutral
+curated.pattern.confirm_it	que ren yi xia	确认一下	998890	Confirm it.	phrase	work	neutral
+curated.pattern.check_it	jian cha yi xia	检查一下	998880	Check it.	phrase	work	neutral
+curated.pattern.learn_about	liao jie yi xia	了解一下	998870	Learn about it.	phrase	daily	neutral
+curated.pattern.take_care_of	chu li yi xia	处理一下	998860	Take care of it.	phrase	work	neutral
+curated.pattern.get_ready	zhun bei yi xia	准备一下	998850	Get ready.	phrase	daily	neutral
+curated.pattern.take_a_break	xiu xi yi xia	休息一下	998840	Take a break.	phrase	daily	neutral
+curated.pattern.explain_briefly	shuo yi xia	说一下	998830	Explain it briefly.	phrase	daily	neutral
+curated.pattern.have_a_listen	ting yi xia	听一下	998820	Have a listen.	phrase	daily	neutral
+curated.pattern.use_it	yong yi xia	用一下	998810	Use it for a moment.	phrase	daily	neutral
+curated.pattern.turn_on	kai yi xia	开一下	998800	Open it; turn it on	phrase	daily	neutral
+curated.pattern.turn_off	guan yi xia	关一下	998790	Close it; turn it off	phrase	daily	neutral
+curated.pattern.send_it	fa yi xia	发一下	998780	Send it.	phrase	daily	neutral
+curated.pattern.give_me_a_hand	bang wo yi xia	帮我一下	998770	Give me a hand.	phrase	daily	casual
+curated.pattern.faster	kuai yi dian	快一点	998760	Faster.	phrase	daily	neutral
+curated.pattern.slower	man yi dian	慢一点	998750	Slower.	phrase	daily	neutral
+curated.pattern.more	duo yi dian	多一点	998740	More.	phrase	daily	neutral
+curated.pattern.less	shao yi dian	少一点	998730	Less.	phrase	daily	neutral
+curated.pattern.better	hao yi dian	好一点	998720	Better.	phrase	daily	neutral
+curated.pattern.smaller	xiao yi dian	小一点	998710	Smaller.	phrase	daily	neutral
+curated.pattern.bigger	da yi dian	大一点	998700	Bigger.	phrase	daily	neutral
+curated.pattern.closer	jin yi dian	近一点	998690	Closer.	phrase	daily	neutral
+curated.pattern.farther	yuan yi dian	远一点	998680	Farther.	phrase	daily	neutral
+curated.pattern.eat_a_little	chi yi dian	吃一点	998670	Eat a little.	phrase	food	neutral
+curated.pattern.drink_a_little	he yi dian	喝一点	998660	Drink a little.	phrase	food	neutral
+curated.pattern.think_it_over	xiang yi xiang	想一想	998650	Think it over.	phrase	daily	neutral
+curated.pattern.think_about_it	xiang yi xia	想一下	998640	Think about it.	phrase	daily	neutral
+curated.pattern.look_again	kan yi kan	看一看	998630	Take a look.	phrase	daily	neutral
+curated.pattern.try_and_see	shi shi kan	试试看	998620	Give it a try.	phrase	daily	casual
+curated.pattern.listen_a_bit	ting yi ting	听一听	998610	Have a listen.	phrase	daily	neutral
+curated.pattern.ask_around	wen yi wen	问一问	998600	Ask around.	phrase	daily	neutral
+curated.pattern.revise_it	gai yi gai	改一改	998590	Revise it.	phrase	work	neutral
+curated.daily.no_problem_phrase	mei you shen me wen ti	没有什么问题	999400	There's no problem.	phrase	daily	neutral
+curated.daily.no_god	mei you shen	没有神	999300	There is no god.	phrase	daily	neutral
+curated.daily.no_water_to_drink	mei you shui he	没有水喝	999200	There's no water to drink.	phrase	daily	neutral
+curated.daily.did_not_sleep	mei you shui	没有睡	999100	Didn't sleep.	phrase	daily	casual
+curated.daily.no_time	mei you shi jian	没有时间	999000	I don't have time.	phrase	daily	neutral
+curated.daily.no_need	mei you bi yao	没有必要	998900	There's no need.	phrase	daily	neutral
+curated.daily.no_way	mei you ban fa	没有办法	998800	There's no way.	phrase	daily	neutral
+curated.daily.nobody	mei you ren	没有人	998700	Nobody.	phrase	daily	neutral
+curated.daily.nothing_there	mei you dong xi	没有东西	998600	There's nothing there.	phrase	daily	neutral
+curated.daily.all_need_to	dou yao	都要	998000	They all need to.	phrase	daily	neutral
+curated.daily.all_need_to_have	dou yao you	都要有	997000	They all need to have it.	phrase	daily	neutral
+curated.daily.make_sure_everyone_has_one	dou yao you o	都要有哦	996000	Make sure everyone has one.	phrase	daily	casual
+curated.daily.all_must_be_by	dou yao you	都要由	994000	They must all be handled by…	phrase	daily	neutral
+curated.food.hungry	wo e le	我饿了	420000	I'm hungry.	phrase	food	casual
+curated.food.thirsty	wo ke le	我渴了	410000	I'm thirsty.	phrase	food	casual
+curated.food.have_you_eaten	chi fan le ma	吃饭了吗	400000	Have you eaten?	phrase	food	casual
+curated.food.eat_together	yi qi chi fan ba	一起吃饭吧	390000	Let's eat together.	phrase	food	casual
+curated.food.what_to_eat	xiang chi shen me	想吃什么	380000	What would you like to eat?	phrase	food	neutral
+curated.food.anything_is_fine	shen me dou xing	什么都行	370000	Anything is fine.	phrase	food	casual
+curated.food.menu	qing gei wo cai dan	请给我菜单	360000	Could I see the menu, please?	phrase	food	polite
+curated.food.want_this	wo yao zhe ge	我要这个	350000	I'd like this one.	phrase	food	neutral
+curated.food.not_spicy	bu yao la	不要辣	340000	Not spicy, please.	phrase	food	neutral
+curated.food.less_salt	shao fang dian yan	少放点盐	330000	Please use less salt.	phrase	food	neutral
+curated.food.to_go	da bao dai zou	打包带走	320000	To go, please.	phrase	food	neutral
+curated.food.bill	qing mai dan	请买单	310000	Could we have the bill, please?	phrase	food	polite
+curated.shopping.card	ke yi shua ka ma	可以刷卡吗	300000	Can I pay by card?	phrase	shopping	neutral
+curated.shopping.how_much	duo shao qian	多少钱	290000	How much is it?	phrase	shopping	neutral
+curated.shopping.too_expensive	tai gui le	太贵了	280000	It's too expensive.	phrase	shopping	casual
+curated.shopping.cheaper	pian yi yi dian	便宜一点	270000	Could you make it cheaper?	phrase	shopping	casual
+curated.shopping.discount	you mei you zhe kou	有没有折扣	260000	Is there a discount?	phrase	shopping	neutral
+curated.shopping.just_looking	wo zhi shi kan kan	我只是看看	250000	I'm just looking.	phrase	shopping	neutral
+curated.travel.restroom	xi shou jian zai na li	洗手间在哪里	240000	Where is the restroom?	phrase	travel	neutral
+curated.travel.subway	di tie zhan zai na li	地铁站在哪里	230000	Where is the subway station?	phrase	travel	neutral
+curated.travel.how_get_there	zen me zou	怎么走	220000	How do I get there?	phrase	travel	neutral
+curated.travel.is_it_far	li zhe li yuan ma	离这里远吗	210000	Is it far from here?	phrase	travel	neutral
+curated.travel.lost	wo mi lu le	我迷路了	200000	I'm lost.	phrase	travel	neutral
+curated.travel.call_taxi	bang wo jiao che	帮我叫车	190000	Please call me a taxi.	phrase	travel	neutral
+curated.travel.stop_here	dao zhe li ting	到这里停	180000	Please stop here.	phrase	travel	neutral
+curated.travel.one_ticket	yi zhang piao	一张票	170000	One ticket, please.	phrase	travel	neutral
+curated.travel.round_trip	wang fan piao	往返票	160000	A round-trip ticket.	phrase	travel	neutral
+curated.travel.one_way	dan cheng piao	单程票	150000	A one-way ticket.	phrase	travel	neutral
+curated.travel.departure_time	shen me shi hou chu fa	什么时候出发	140000	When does it leave?	phrase	travel	neutral
+curated.travel.arrival_time	shen me shi hou dao	什么时候到	130000	When does it arrive?	phrase	travel	neutral
+curated.travel.flight_delayed	hang ban yan wu le	航班延误了	120000	The flight has been delayed.	phrase	travel	neutral
+curated.travel.luggage_lost	wo de xing li diu le	我的行李丢了	110000	My luggage is missing.	phrase	travel	neutral
+curated.work.got_it	shou dao	收到	995000	Got it.	phrase	work	neutral
+curated.work.ill_handle	wo lai chu li	我来处理	985000	I'll take care of it.	phrase	work	neutral
+curated.work.in_progress	zheng zai chu li	正在处理	975000	It's in progress.	phrase	work	neutral
+curated.work.completed	yi jing wan cheng	已经完成	965000	It's been completed.	phrase	work	neutral
+curated.work.not_finished	hai mei wan cheng	还没完成	955000	It's not finished yet.	phrase	work	neutral
+curated.work.reply_later	shao hou hui fu	稍后回复	945000	I'll reply later.	phrase	work	neutral
+curated.work.asap	jin kuai	尽快	935000	As soon as possible.	phrase	work	neutral
+curated.work.deadline	jie zhi ri qi	截止日期	925000	deadline	noun	work	neutral
+curated.work.schedule_meeting	an pai hui yi	安排会议	915000	Schedule a meeting.	phrase	work	neutral
+curated.work.reschedule	gai ge shi jian	改个时间	905000	Let's reschedule it.	phrase	work	neutral
+curated.work.cancel_meeting	qu xiao hui yi	取消会议	895000	Cancel the meeting.	phrase	work	neutral
+curated.work.join_meeting	can jia hui yi	参加会议	885000	Join the meeting.	phrase	work	neutral
+curated.work.meeting_link	hui yi lian jie	会议链接	875000	meeting link	noun	work	neutral
+curated.work.please_check	qing cha shou	请查收	865000	Please check it.	phrase	work	polite
+curated.work.attachment	fu jian	附件	855000	attachment	noun	work	neutral
+curated.work.contact_questions	you wen ti sui shi lian xi	有问题随时联系	845000	Feel free to contact me with any questions.	phrase	work	neutral
+curated.work.keep_aligned	bao chi tong bu	保持同步	835000	Let's stay aligned.	phrase	work	neutral
+curated.work.follow_up	gen jin yi xia	跟进一下	825000	Follow up on it.	phrase	work	neutral
+curated.work.progress	jin zhan ru he	进展如何	815000	How is it going?	phrase	work	neutral
+curated.work.need_help	xu yao bang zhu ma	需要帮助吗	805000	Do you need any help?	phrase	work	neutral

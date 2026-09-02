@@ -131,6 +131,27 @@ public final class SQLiteLexicon: LexiconRepository, @unchecked Sendable {
             .map { $0 }
     }
 
+    public func metadata(
+        for sourceTexts: [String],
+        targetLanguage: String
+    ) -> [String: Candidate] {
+        let uniqueTexts = Array(Set(sourceTexts)).filter { !$0.isEmpty }
+        guard !uniqueTexts.isEmpty else { return [:] }
+        let placeholders = Array(repeating: "?", count: uniqueTexts.count)
+            .joined(separator: ", ")
+        let matches = query(
+            whereClause: "l.chinese IN (\(placeholders)) AND t.translation <> ''",
+            matchValues: uniqueTexts,
+            targetLanguage: targetLanguage,
+            limit: max(uniqueTexts.count * 8, 64)
+        )
+        var result: [String: Candidate] = [:]
+        for candidate in matches where result[candidate.sourceText] == nil {
+            result[candidate.sourceText] = candidate
+        }
+        return result
+    }
+
     private func query(
         whereClause: String,
         matchValues: [String],

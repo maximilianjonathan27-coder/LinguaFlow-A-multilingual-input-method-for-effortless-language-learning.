@@ -366,6 +366,110 @@ final class LexiconTests: XCTestCase {
         XCTAssertEqual(machine.allCandidates.first?.domain, "english")
     }
 
+    func testReviewedDailyExpressionsHaveNaturalTranslations() throws {
+        let lexicon = try SQLiteLexicon(databaseURL: databaseURL)
+
+        XCTAssertEqual(
+            lexicon.candidates(for: "dou yao you", limit: 10)
+                .first(where: { $0.sourceText == "都要有" })?.translation,
+            "They all need to have it."
+        )
+        XCTAssertEqual(
+            lexicon.candidates(for: "hao jiu bu jian", limit: 10)
+                .first(where: { $0.sourceText == "好久不见" })?.translation,
+            "Long time no see."
+        )
+        XCTAssertEqual(
+            lexicon.candidates(for: "qing zai shuo yi bian", limit: 10)
+                .first(where: { $0.sourceText == "请再说一遍" })?.translation,
+            "Could you say that again?"
+        )
+        XCTAssertEqual(
+            lexicon.candidates(for: "mei you shen me wen ti", limit: 10)
+                .first(where: { $0.sourceText == "没有什么问题" })?.translation,
+            "There's no problem."
+        )
+        XCTAssertEqual(
+            lexicon.candidates(for: "mei you shui he", limit: 10)
+                .first(where: { $0.sourceText == "没有水喝" })?.translation,
+            "There's no water to drink."
+        )
+        XCTAssertEqual(
+            lexicon.candidates(for: "wo xiang he shui", limit: 10)
+                .first(where: { $0.sourceText == "我想喝水" })?.translation,
+            "I want to drink some water."
+        )
+        XCTAssertEqual(
+            lexicon.candidates(for: "gai yi xia", limit: 10)
+                .first(where: { $0.sourceText == "改一下" })?.translation,
+            "Change it."
+        )
+        XCTAssertTrue(lexicon.candidates(for: "xiang", limit: 10).contains {
+            $0.sourceText == "想" && $0.translation.hasPrefix("to want;")
+        })
+    }
+
+    func testMetadataLookupFindsTranslatedPartialConsumptionCandidates() throws {
+        let lexicon = try SQLiteLexicon(databaseURL: databaseURL)
+        let metadata = lexicon.metadata(for: ["豆芽", "都要有", "未收录测试词"])
+
+        XCTAssertEqual(metadata["豆芽"]?.translation, "bean sprout")
+        XCTAssertEqual(metadata["都要有"]?.translation, "They all need to have it.")
+        XCTAssertNil(metadata["未收录测试词"])
+    }
+
+    func testCEDICTImportPrefersUsefulReadingsAndNonVariantDefinitions() throws {
+        let lexicon = try SQLiteLexicon(databaseURL: databaseURL)
+
+        XCTAssertTrue(lexicon.candidates(for: "dou", limit: 10).contains {
+            $0.sourceText == "都" && $0.translation.hasPrefix("all;")
+        })
+        XCTAssertTrue(lexicon.candidates(for: "yao", limit: 10).contains {
+            $0.sourceText == "要" && $0.translation.hasPrefix("to want;")
+        })
+        XCTAssertTrue(lexicon.candidates(for: "yao", limit: 10).contains {
+            $0.sourceText == "药" && $0.translation == "medicine"
+        })
+        XCTAssertTrue(lexicon.candidates(for: "shui", limit: 10).contains {
+            $0.sourceText == "水" && $0.translation.hasPrefix("water")
+        })
+        XCTAssertTrue(lexicon.candidates(for: "he", limit: 10).contains {
+            $0.sourceText == "喝" && $0.translation == "to drink"
+        })
+    }
+
+    func testGeneratedSentenceCandidatesClearlyMarkApproximateGlosses() throws {
+        let decoder = PinyinDecoder(lexicon: try SQLiteLexicon(databaseURL: databaseURL))
+        let generated = decoder.candidates(for: "woxiangqubeijing", limit: 30)
+            .first(where: { $0.sourceText == "我想去北京" })
+
+        XCTAssertTrue(generated?.translation.hasPrefix("≈ ") == true)
+        XCTAssertEqual(generated?.style, "approximate")
+    }
+
+    func testCommonGrammarChunksUseNaturalEnglishBeforeGlossComposition() throws {
+        let lexicon = try SQLiteLexicon(databaseURL: databaseURL)
+        let cases: [(String, String, String)] = [
+            ("kan yi xia", "看一下", "Take a look."),
+            ("shi yi xia", "试一下", "Give it a try."),
+            ("que ren yi xia", "确认一下", "Confirm it."),
+            ("xiu xi yi xia", "休息一下", "Take a break."),
+            ("kuai yi dian", "快一点", "Faster."),
+            ("xiang yi xiang", "想一想", "Think it over."),
+            ("neng bu neng", "能不能", "Can you?; Is it possible?"),
+            ("wo bu xiang", "我不想", "I don't want to."),
+        ]
+
+        for (pinyin, sourceText, translation) in cases {
+            XCTAssertEqual(
+                lexicon.candidates(for: pinyin, limit: 20)
+                    .first(where: { $0.sourceText == sourceText })?.translation,
+                translation,
+                sourceText
+            )
+        }
+    }
+
     func testExactEnglishLeadsOnlyWithoutExactChineseMatch() throws {
         let lexicon = try SQLiteLexicon(databaseURL: databaseURL)
         var englishMachine = CompositionStateMachine(lexicon: lexicon)

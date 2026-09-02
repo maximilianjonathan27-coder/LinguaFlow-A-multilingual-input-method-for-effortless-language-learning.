@@ -1,7 +1,9 @@
 # Lexicon data provenance
 
-The seed lexicon in `lexicon.tsv` and `translations.tsv` was written for the
-LinguaFlow prototype.
+The seed lexicon in `lexicon.tsv` and `translations.tsv`, together with the
+reviewed daily expressions in `curated_phrases.tsv`, was written for the
+LinguaFlow prototype. The curated file is kept separate so its translations
+can be reviewed and expanded without modifying imported dictionary exports.
 
 The generated database imports
 `External/rime_ice_base.dict.yaml` and `External/rime_ice_8105.dict.yaml` from

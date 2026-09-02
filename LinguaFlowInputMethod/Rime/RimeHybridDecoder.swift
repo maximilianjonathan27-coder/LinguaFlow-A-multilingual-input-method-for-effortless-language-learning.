@@ -14,6 +14,7 @@ final class RimeHybridDecoder: CandidateDecoding, @unchecked Sendable {
         category: "Rime"
     )
     private let fallback: PinyinDecoder
+    private let lexicon: any LexiconRepository
     private let targetLanguage: String
     private let cacheLock = NSLock()
     private var cachedInput = ""
@@ -27,6 +28,7 @@ final class RimeHybridDecoder: CandidateDecoding, @unchecked Sendable {
         targetLanguage: String = "en"
     ) {
         fallback = PinyinDecoder(lexicon: lexicon, targetLanguage: targetLanguage)
+        self.lexicon = lexicon
         self.targetLanguage = targetLanguage
         do {
             try FileManager.default.createDirectory(
@@ -97,9 +99,13 @@ final class RimeHybridDecoder: CandidateDecoding, @unchecked Sendable {
         // disturb librime's ranking contract.
         let rawResults = primary
 
-        let metadataByText = Dictionary(
+        let fallbackMetadataByText = Dictionary(
             fallbackCandidates.map { ($0.sourceText, $0) },
             uniquingKeysWith: { first, _ in first }
+        )
+        let metadataByText = lexicon.metadata(
+            for: translationLookupTexts(in: rawResults.map(\.text)),
+            targetLanguage: targetLanguage
         )
         let inputSegments = PinyinNormalizer.segments(for: input)
         var results: [Candidate] = []
@@ -108,7 +114,17 @@ final class RimeHybridDecoder: CandidateDecoding, @unchecked Sendable {
         for (index, item) in rawResults.enumerated() {
             let text = item.text
             guard !text.isEmpty, seenText.insert(text).inserted else { continue }
-            let metadata = metadataByText[text]
+            let fallbackMetadata = fallbackMetadataByText[text]
+            let metadata = if let dictionaryMetadata = metadataByText[text],
+                              !dictionaryMetadata.translation.isEmpty {
+                dictionaryMetadata
+            } else {
+                fallbackMetadata
+            }
+            let translation = metadata?.translation.isEmpty == false
+                ? metadata?.translation ?? ""
+                : compositionalTranslation(for: text, metadataByText: metadataByText) ?? ""
+            let isApproximate = translation.hasPrefix("≈ ")
             results.append(Candidate(
                 // Learning is tied to the composition as well as the text. This
                 // keeps choosing 吧 for `ba` from incorrectly promoting it for
@@ -122,12 +138,12 @@ final class RimeHybridDecoder: CandidateDecoding, @unchecked Sendable {
                     pinyinHint: item.pinyinHint
                 ),
                 sourceText: text,
-                translation: metadata?.translation ?? "",
+                translation: translation,
                 frequency: 2_000_000_000 - index,
                 targetLanguage: metadata?.targetLanguage ?? targetLanguage,
-                partOfSpeech: metadata?.partOfSpeech,
+                partOfSpeech: isApproximate ? "generated-gloss" : metadata?.partOfSpeech,
                 domain: metadata?.domain ?? "general",
-                style: metadata?.style ?? "neutral"
+                style: isApproximate ? "approximate" : metadata?.style ?? "neutral"
             ))
         }
 
@@ -135,6 +151,74 @@ final class RimeHybridDecoder: CandidateDecoding, @unchecked Sendable {
             results.append(candidate)
         }
         return cache(Array(results.prefix(limit)), input: cacheKey, limit: limit)
+    }
+
+    private func translationLookupTexts(in sourceTexts: [String]) -> [String] {
+        var lookups: Set<String> = []
+        for sourceText in sourceTexts {
+            let characters = Array(sourceText)
+            guard !characters.isEmpty, characters.count <= 12 else { continue }
+            for start in characters.indices {
+                let maximumEnd = min(characters.count, start + 6)
+                for end in (start + 1)...maximumEnd {
+                    lookups.insert(String(characters[start..<end]))
+                }
+            }
+        }
+        return Array(lookups)
+    }
+
+    private func compositionalTranslation(
+        for sourceText: String,
+        metadataByText: [String: Candidate]
+    ) -> String? {
+        struct GlossPath {
+            let glosses: [String]
+            let score: Int64
+        }
+
+        let characters = Array(sourceText)
+        guard characters.count > 1, characters.count <= 12 else { return nil }
+        var paths = Array<GlossPath?>(repeating: nil, count: characters.count + 1)
+        paths[0] = GlossPath(glosses: [], score: 0)
+
+        for start in characters.indices {
+            guard let path = paths[start] else { continue }
+            let maximumEnd = min(characters.count, start + 6)
+            for end in (start + 1)...maximumEnd {
+                let text = String(characters[start..<end])
+                guard let metadata = metadataByText[text], !metadata.translation.isEmpty else {
+                    continue
+                }
+                let length = end - start
+                // Strongly prefer known multi-character words and grammar
+                // units such as “一下” over character glosses like “one · down”.
+                let lengthScore = Int64(length * length * 100_000)
+                let frequencyScore = Int64(log(Double(max(1, metadata.frequency))) * 1_000)
+                let candidate = GlossPath(
+                    glosses: path.glosses + [compactGloss(metadata.translation)],
+                    score: path.score + lengthScore + frequencyScore
+                )
+                if paths[end].map({ $0.score < candidate.score }) ?? true {
+                    paths[end] = candidate
+                }
+            }
+        }
+
+        guard let result = paths[characters.count], result.glosses.count > 1 else { return nil }
+        return "≈ " + result.glosses.joined(separator: " · ")
+    }
+
+    private func compactGloss(_ translation: String) -> String {
+        var gloss = translation
+        if gloss.hasPrefix("≈ ") { gloss.removeFirst(2) }
+        gloss = gloss.split(separator: ";", maxSplits: 1).first
+            .map(String.init) ?? gloss
+        while gloss.hasPrefix("("), let closing = gloss.firstIndex(of: ")") {
+            gloss = String(gloss[gloss.index(after: closing)...])
+                .trimmingCharacters(in: .whitespaces)
+        }
+        return gloss.isEmpty ? translation : gloss
     }
 
     private func cache(_ candidates: [Candidate], input: String, limit: Int) -> [Candidate] {

@@ -34,7 +34,11 @@ public struct PinyinDecoder: CandidateDecoding, Sendable {
             inferredSentences
                 .filter { !$0.translation.isEmpty }
                 .map { ($0.sourceText, $0.translation) },
-            uniquingKeysWith: { first, _ in first }
+            uniquingKeysWith: { first, second in
+                approximationSegmentCount(first) <= approximationSegmentCount(second)
+                    ? first
+                    : second
+            }
         )
         let exactCandidates = rawExactCandidates.map { candidate in
             guard candidate.translation.isEmpty,
@@ -358,11 +362,12 @@ public struct PinyinDecoder: CandidateDecoding, Sendable {
             pinyin: input,
             sourceText: path.candidates.map(\.sourceText).joined(),
             translation: translations.count == path.candidates.count
-                ? translations.joined(separator: " ")
+                ? "≈ " + translations.map(compactGloss).joined(separator: " · ")
                 : "",
             frequency: Int(min(path.score, Int64(Int.max))),
             targetLanguage: targetLanguage,
-            partOfSpeech: "sentence"
+            partOfSpeech: "generated-gloss",
+            style: "approximate"
         )
     }
 
@@ -382,6 +387,22 @@ public struct PinyinDecoder: CandidateDecoding, Sendable {
         let translated = candidates.filter { !$0.translation.isEmpty }
         return translated.isEmpty ? candidates : translated
     }
+
+    private func compactGloss(_ translation: String) -> String {
+        var gloss = translation
+        if gloss.hasPrefix("≈ ") { gloss.removeFirst(2) }
+        gloss = gloss.split(separator: ";", maxSplits: 1).first
+            .map(String.init) ?? gloss
+        while gloss.hasPrefix("("), let closing = gloss.firstIndex(of: ")") {
+            gloss = String(gloss[gloss.index(after: closing)...])
+                .trimmingCharacters(in: .whitespaces)
+        }
+        return gloss.isEmpty ? translation : gloss
+    }
+
+    private func approximationSegmentCount(_ translation: String) -> Int {
+        translation.components(separatedBy: " · ").count
+    }
 }
 
 private extension Candidate {
@@ -393,9 +414,9 @@ private extension Candidate {
             translation: replacement,
             frequency: frequency,
             targetLanguage: targetLanguage,
-            partOfSpeech: partOfSpeech,
+            partOfSpeech: replacement.hasPrefix("≈ ") ? "generated-gloss" : partOfSpeech,
             domain: domain,
-            style: style
+            style: replacement.hasPrefix("≈ ") ? "approximate" : style
         )
     }
 }
