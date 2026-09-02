@@ -2,6 +2,23 @@
 
 > **Type naturally. Learn effortlessly.**
 
+## One-step preparation and installation
+
+After cloning the repository or downloading and extracting the GitHub ZIP,
+double-click **Install LinguaFlow.command**. The same flow can be started from
+Terminal with:
+
+```sh
+./Install\ LinguaFlow.command
+```
+
+For a Git clone, this entry point first fast-forwards to the latest GitHub
+`main` patch set when it is safe to do so. It then installs or verifies
+`librime`, rebuilds the bundled dictionaries, runs a real mixed-Pinyin probe,
+and only installs the input method after every prerequisite succeeds. A ZIP
+already contains the patch set that existed when it was downloaded, so the
+installer uses those packaged files directly.
+
 ## Local macOS MVP status
 
 The current local build is a native InputMethodKit input method with:
