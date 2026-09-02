@@ -1,6 +1,12 @@
 import Foundation
 
 public enum CandidateRanker {
+    private static let preferredSingleInitialCandidates: [String: String] = [
+        "b": "吧",
+        "m": "吗",
+        "l": "了",
+    ]
+
     public static func rank(
         _ candidates: [Candidate],
         for input: String,
@@ -16,11 +22,19 @@ public enum CandidateRanker {
             let learnedRimeCandidates = rimeCandidates.sorted { lhs, rhs in
                 let lhsScore = adaptiveRimeScore(
                     originalIndex: lhs.offset,
-                    usageCount: selectionCounts[lhs.element.id, default: 0]
+                    usageCount: selectionCounts[lhs.element.id, default: 0],
+                    defaultLift: singleInitialDefaultLift(
+                        candidate: lhs.element,
+                        input: input
+                    )
                 )
                 let rhsScore = adaptiveRimeScore(
                     originalIndex: rhs.offset,
-                    usageCount: selectionCounts[rhs.element.id, default: 0]
+                    usageCount: selectionCounts[rhs.element.id, default: 0],
+                    defaultLift: singleInitialDefaultLift(
+                        candidate: rhs.element,
+                        input: input
+                    )
                 )
                 if lhsScore != rhsScore { return lhsScore > rhsScore }
                 return lhs.offset < rhs.offset
@@ -38,12 +52,32 @@ public enum CandidateRanker {
         return rankLegacy(candidates, for: input, selectionCounts: selectionCounts)
     }
 
-    private static func adaptiveRimeScore(originalIndex: Int, usageCount: Int) -> Int {
+    private static func adaptiveRimeScore(
+        originalIndex: Int,
+        usageCount: Int,
+        defaultLift: Int = 0
+    ) -> Int {
         // Keep the dictionary rank dominant. The square-root curve gives early
         // choices a small useful lift while preventing old/high counts from
         // overwhelming a much more common Rime candidate indefinitely.
         let usageLift = Int(sqrt(Double(max(0, usageCount))) * 2)
-        return usageLift - originalIndex
+        return defaultLift + usageLift - originalIndex
+    }
+
+    private static func singleInitialDefaultLift(
+        candidate: Candidate,
+        input: String
+    ) -> Int {
+        let normalizedInput = PinyinNormalizer.normalize(input)
+        guard normalizedInput.count == 1,
+              preferredSingleInitialCandidates[normalizedInput] == candidate.sourceText else {
+            return 0
+        }
+
+        // Single-letter abbreviation input is unusually ambiguous. Give the
+        // most useful conversational particles a modest cold-start lift while
+        // still allowing repeated committed choices to personalize the order.
+        return 8
     }
 
     private static func rankLegacy(

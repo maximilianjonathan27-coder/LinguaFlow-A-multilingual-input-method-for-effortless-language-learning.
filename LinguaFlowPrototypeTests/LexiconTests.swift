@@ -118,6 +118,55 @@ final class LexiconTests: XCTestCase {
         XCTAssertEqual(ranked.first?.sourceText, "吧")
     }
 
+    func testSingleInitialsPreferConversationalParticles() {
+        let expectations: [(input: String, preferred: String, defaults: [String])] = [
+            ("b", "吧", ["把", "被", "不", "本", "边", "吧"]),
+            ("m", "吗", ["吗", "没", "么"]),
+            ("l", "了", ["来", "里", "老", "啦", "了"]),
+        ]
+
+        for expectation in expectations {
+            let candidates = expectation.defaults.enumerated().map { index, text in
+                Candidate(
+                    id: "rime:\(expectation.input):\(text)",
+                    pinyin: expectation.input,
+                    sourceText: text,
+                    translation: "",
+                    frequency: 2_000_000_000 - index
+                )
+            }
+
+            XCTAssertEqual(
+                CandidateRanker.rank(
+                    candidates,
+                    for: expectation.input,
+                    selectionCounts: [:]
+                ).first?.sourceText,
+                expectation.preferred
+            )
+        }
+    }
+
+    func testSingleInitialPreferenceStillAllowsCommittedLearning() {
+        let candidates = ["来", "里", "老", "啦", "了"].enumerated().map { index, text in
+            Candidate(
+                id: "rime:l:\(text)",
+                pinyin: "l",
+                sourceText: text,
+                translation: "",
+                frequency: 2_000_000_000 - index
+            )
+        }
+
+        let ranked = CandidateRanker.rank(
+            candidates,
+            for: "l",
+            selectionCounts: ["rime:l:来": 9]
+        )
+
+        XCTAssertEqual(ranked.first?.sourceText, "来")
+    }
+
     func testUsageLearningCannotOverwhelmDistantLibrimeDefaults() {
         let candidates = (0..<10).map { index in
             Candidate(
