@@ -453,6 +453,46 @@ final class LexiconTests: XCTestCase {
                 .first(where: { $0.sourceText == "改一下" })?.translation,
             "Change it."
         )
+        XCTAssertEqual(
+            lexicon.candidates(for: "wo zai xiang", limit: 10)
+                .first(where: { $0.sourceText == "我在想" })?.translation,
+            "I'm thinking."
+        )
+        XCTAssertEqual(
+            lexicon.candidates(for: "ni zai xiang shen me", limit: 10)
+                .first(where: { $0.sourceText == "你在想什么" })?.translation,
+            "What are you thinking about?"
+        )
+        XCTAssertEqual(
+            lexicon.candidates(for: "wo xiang qi lai le", limit: 10)
+                .first(where: { $0.sourceText == "我想起来了" })?.translation,
+            "I remember now."
+        )
+        XCTAssertEqual(
+            lexicon.candidates(for: "xiang he", limit: 10)
+                .first(where: { $0.sourceText == "想喝" })?.translation,
+            "want to drink"
+        )
+        XCTAssertEqual(
+            lexicon.candidates(for: "rang wo xiang xiang", limit: 10)
+                .first(where: { $0.sourceText == "让我想想" })?.translation,
+            "Let me think."
+        )
+        XCTAssertEqual(
+            lexicon.candidates(for: "wo mei xiang dao", limit: 10)
+                .first(where: { $0.sourceText == "我没想到" })?.translation,
+            "I didn't expect that."
+        )
+        XCTAssertEqual(
+            lexicon.candidates(for: "xiang bu qi lai", limit: 10)
+                .first(where: { $0.sourceText == "想不起来" })?.translation,
+            "can't remember"
+        )
+        XCTAssertEqual(
+            lexicon.candidates(for: "wo xiang ni", limit: 10)
+                .first(where: { $0.sourceText == "我想你" })?.translation,
+            "I miss you."
+        )
         XCTAssertTrue(lexicon.candidates(for: "xiang", limit: 10).contains {
             $0.sourceText == "想" && $0.translation.hasPrefix("to want;")
         })
@@ -465,6 +505,27 @@ final class LexiconTests: XCTestCase {
         XCTAssertEqual(metadata["豆芽"]?.translation, "bean sprout")
         XCTAssertEqual(metadata["都要有"]?.translation, "They all need to have it.")
         XCTAssertNil(metadata["未收录测试词"])
+    }
+
+    func testInternetSlangOverridesLiteralDictionaryDefinitions() throws {
+        let lexicon = try SQLiteLexicon(databaseURL: databaseURL)
+        let expectations = [
+            ("beng bu zhu", "绷不住", "I can't hold it in; I'm cracking up."),
+            ("po fang", "破防", "That hit me hard; I couldn't hold back my emotions."),
+            ("chi gua", "吃瓜", "watch the drama; follow the gossip"),
+            ("bai lan", "摆烂", "give up and let things fall apart"),
+            ("sheng liu", "省流", "TL;DR; save you the time or data"),
+        ]
+
+        for (pinyin, chinese, translation) in expectations {
+            let candidate = try XCTUnwrap(
+                lexicon.candidates(for: pinyin, limit: 20)
+                    .first(where: { $0.sourceText == chinese })
+            )
+            XCTAssertEqual(candidate.translation, translation)
+            XCTAssertEqual(candidate.domain, "internet")
+            XCTAssertEqual(candidate.style, "slang")
+        }
     }
 
     func testCEDICTImportPrefersUsefulReadingsAndNonVariantDefinitions() throws {

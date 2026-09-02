@@ -60,11 +60,49 @@ curated.daily.nothing	mei you shen me	没有什么	999500	Nothing.	phrase	daily	
 curated.daily.yours	ni de	你的	999490	your; yours	possessive	daily	neutral
 curated.daily.mine	wo de	我的	999480	my; mine	possessive	daily	neutral
 curated.daily.want	xiang	想	999470	to want; to think about	verb	daily	neutral
+curated.context.thinking	zai xiang	在想	999469	be thinking about	phrase	daily	neutral
+curated.context.im_thinking	wo zai xiang	我在想	999468	I'm thinking.	phrase	daily	neutral
+curated.context.still_thinking	hai zai xiang	还在想	999467	still thinking about it	phrase	daily	neutral
+curated.context.im_still_thinking	wo hai zai xiang	我还在想	999466	I'm still thinking about it.	phrase	daily	neutral
+curated.context.currently_thinking	zheng zai xiang	正在想	999465	be thinking about	phrase	daily	neutral
+curated.context.what_are_you_thinking	ni zai xiang shen me	你在想什么	999464	What are you thinking about?	phrase	daily	neutral
+curated.context.thought_about_it	wo xiang le xiang	我想了想	999463	I thought about it.	phrase	daily	neutral
+curated.context.remember	xiang qi lai	想起来	999462	to remember; to recall	verb	daily	neutral
+curated.context.i_remember_now	wo xiang qi lai le	我想起来了	999461	I remember now.	phrase	daily	neutral
 curated.daily.i_want_to	wo xiang	我想	999460	I want to; I think	phrase	daily	neutral
+curated.context.want_to_go	xiang qu	想去	999459	want to go	phrase	daily	neutral
+curated.context.want_to_do	xiang zuo	想做	999458	want to do	phrase	daily	neutral
+curated.context.want_to_eat	xiang chi	想吃	999457	want to eat	phrase	food	neutral
+curated.context.want_to_drink	xiang he	想喝	999456	want to drink	phrase	food	neutral
+curated.context.want_to_see	xiang kan	想看	999455	want to see	phrase	daily	neutral
+curated.context.want_to_say	xiang shuo	想说	999454	want to say	phrase	daily	neutral
+curated.context.want	xiang yao	想要	999453	want; would like	verb	daily	neutral
+curated.context.want_to_buy	xiang mai	想买	999452	want to buy	phrase	daily	neutral
+curated.context.want_to_ask	xiang wen	想问	999451	want to ask	phrase	daily	neutral
 curated.daily.i_want_to_drink	wo xiang he	我想喝	999450	I want to drink.	phrase	daily	neutral
 curated.daily.i_want_water	wo xiang he shui	我想喝水	999440	I want to drink some water.	phrase	daily	neutral
+curated.context.want_to_know	xiang zhi dao	想知道	999439	want to know	phrase	daily	neutral
+curated.context.want_to_try	xiang shi shi	想试试	999438	want to try	phrase	daily	casual
+curated.context.think_of_way	xiang ban fa	想办法	999437	find a way; think of a way	phrase	daily	neutral
+curated.context.let_me_think	wo xiang xiang	我想想	999436	Let me think.	phrase	daily	casual
+curated.context.let_me_think_full	rang wo xiang xiang	让我想想	999435	Let me think.	phrase	daily	casual
+curated.context.think_carefully	hao hao xiang xiang	好好想想	999434	Think it over carefully.	phrase	daily	neutral
+curated.context.what_do_you_think	ni zen me xiang	你怎么想	999433	What do you think?	phrase	daily	neutral
+curated.context.i_think_so_too	wo xiang ye shi	我想也是	999432	I think so too.	phrase	daily	neutral
+curated.context.overthinking	ni xiang duo le	你想多了	999431	You're overthinking it.	phrase	daily	casual
 curated.daily.change_it	gai yi xia	改一下	999430	Change it.	phrase	daily	neutral
 curated.daily.cover_it	gai yi xia	盖一下	999420	Cover it.	phrase	daily	neutral
+curated.context.thought_of_it	xiang dao le	想到了	999419	I thought of it; Got it.	phrase	daily	neutral
+curated.context.didnt_expect	mei xiang dao	没想到	999418	didn't expect that	phrase	daily	neutral
+curated.context.i_didnt_expect	wo mei xiang dao	我没想到	999417	I didn't expect that.	phrase	daily	neutral
+curated.context.really_didnt_expect	zhen mei xiang dao	真没想到	999416	I really didn't expect that.	phrase	daily	neutral
+curated.context.cant_imagine	xiang bu dao	想不到	999415	can't imagine; unexpectedly	phrase	daily	neutral
+curated.context.cant_remember	xiang bu qi lai	想不起来	999414	can't remember	phrase	daily	neutral
+curated.context.can_remember	xiang de qi lai	想得起来	999413	can remember	phrase	daily	neutral
+curated.context.miss	xiang nian	想念	999412	to miss; to long for	verb	daily	neutral
+curated.context.i_miss_you	wo xiang ni	我想你	999411	I miss you.	phrase	daily	neutral
+curated.context.imagine	xiang xiang	想象	999409	to imagine	verb	general	neutral
+curated.context.stop_thinking	bie xiang le	别想了	999408	Stop thinking about it; Forget it.	phrase	daily	casual
 curated.pattern.i_want	wo yao	我要	999410	I want; I'd like	phrase	daily	neutral
 curated.pattern.you_can	ni ke yi	你可以	999400	You can.	phrase	daily	neutral
 curated.pattern.i_can	wo ke yi	我可以	999390	I can.	phrase	daily	neutral
