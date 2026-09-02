@@ -178,7 +178,7 @@ struct CandidatePanelView: View {
                             .fixedSize(horizontal: false, vertical: true)
                             .layoutPriority(2)
 
-                        seenCount(candidate, isSelected: index == model.selectedIndex)
+                        usedCount(candidate, isSelected: index == model.selectedIndex)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -288,8 +288,8 @@ struct CandidatePanelView: View {
         }
     }
 
-    private func seenCount(_ candidate: Candidate, isSelected: Bool) -> some View {
-        Text("Seen \(model.counts[candidate.id, default: 0])×")
+    private func usedCount(_ candidate: Candidate, isSelected: Bool) -> some View {
+        Text("Used \(model.counts[candidate.id, default: 0])×")
             .font(.caption2.monospacedDigit().weight(.medium))
             .foregroundStyle(isSelected ? Color.white.opacity(0.6) : Color.secondary.opacity(0.48))
     }
@@ -301,7 +301,7 @@ struct CandidatePanelView: View {
 
     private func accessibilityLabel(_ candidate: Candidate, index: Int) -> String {
         let number = model.isExpanded ? index % 3 + 1 : index + 1
-        return "候选 \(number)，\(candidate.sourceText)，\(candidate.translation.isEmpty ? "暂无翻译" : candidate.translation)，Seen \(model.counts[candidate.id, default: 0]) 次"
+        return "候选 \(number)，\(candidate.sourceText)，\(candidate.translation.isEmpty ? "暂无翻译" : candidate.translation)，使用 \(model.counts[candidate.id, default: 0]) 次"
     }
 }
 

@@ -13,13 +13,12 @@ final class LinguaFlowInputController: IMKInputController {
     private var stateMachine: CompositionStateMachine
     private let lexicon: SQLiteLexicon?
     private var usesRime: Bool
-    private lazy var exposureStore = ExposureStore()
     private lazy var selectionStore = SelectionStore()
-    private var lastExposedCandidateIDs: [String] = []
-    private var pendingExposureTask: Task<Void, Never>?
+    private var pendingCandidateTask: Task<Void, Never>?
     private var pendingTranslationTask: Task<Void, Never>?
     private lazy var sentenceTranslator = LocalSentenceTranslator()
     private var lastCaretRectangle = NSRect.zero
+    private var compositionAnchor: NSRect?
     private lazy var candidatePanel: CandidatePanelController = {
         let controller = CandidatePanelController()
         controller.onSelect = { [weak self] candidateID in
@@ -183,6 +182,7 @@ final class LinguaFlowInputController: IMKInputController {
     override func commitComposition(_ sender: Any!) {
         guard let inputClient = sender as? (any IMKTextInput) else {
             stateMachine.reset()
+            compositionAnchor = nil
             candidatePanel.hide()
             return
         }
@@ -190,7 +190,6 @@ final class LinguaFlowInputController: IMKInputController {
     }
 
     override func activateServer(_ sender: Any!) {
-        exposureStore.refresh()
         selectionStore.refresh()
         refreshDirectionIfNeeded()
         stateMachine.updateSelectionCounts(selectionStore.counts)
@@ -202,6 +201,7 @@ final class LinguaFlowInputController: IMKInputController {
             _ = apply(stateMachine.handle(.deactivate), to: inputClient)
         } else {
             stateMachine.reset()
+            compositionAnchor = nil
             candidatePanel.hide()
         }
         super.deactivateServer(sender)
@@ -276,6 +276,17 @@ final class LinguaFlowInputController: IMKInputController {
         _ transition: CompositionStateMachine.Transition,
         to inputClient: any IMKTextInput
     ) -> Bool {
+        let updatesMarkedText = transition.effects.contains { effect in
+            if case .updateMarkedText = effect { return true }
+            return false
+        }
+        if updatesMarkedText, !stateMachine.buffer.isEmpty, compositionAnchor == nil {
+            // Capture the insertion point before the first marked character is
+            // written. Every candidate refresh in this composition reuses it,
+            // so the panel does not chase the advancing marked-text cursor.
+            compositionAnchor = caretRectangle(for: inputClient, compositionIndex: 0)
+        }
+
         for effect in transition.effects {
             switch effect {
             case let .updateMarkedText(text, cursor):
@@ -286,25 +297,24 @@ final class LinguaFlowInputController: IMKInputController {
                 )
 
             case let .updateCandidates(candidates, selectedIndex):
-                let candidateIDs = candidates.map(\.id)
-                if candidateIDs != lastExposedCandidateIDs {
-                    scheduleExposureRecording(candidates)
-                    lastExposedCandidateIDs = candidateIDs
-                }
                 candidatePanel.show(
                     compactCandidates: candidates,
                     expandedCandidates: stateMachine.allCandidates,
                     selectedCandidateID: candidates[safe: selectedIndex]?.id,
                     query: stateMachine.displayedBuffer,
-                    counts: exposureStore.counts,
-                    anchor: caretRectangle(for: inputClient)
+                    counts: selectionStore.counts,
+                    anchor: compositionAnchor ?? caretRectangle(for: inputClient)
                 )
                 scheduleSentenceTranslation(for: stateMachine.allCandidates)
 
             case .hideCandidates:
+                pendingCandidateTask?.cancel()
+                pendingCandidateTask = nil
                 cancelSentenceTranslation()
                 candidatePanel.hide()
-                lastExposedCandidateIDs = []
+                if stateMachine.buffer.isEmpty {
+                    compositionAnchor = nil
+                }
 
             case let .insertText(text):
                 inputClient.insertText(
@@ -322,19 +332,38 @@ final class LinguaFlowInputController: IMKInputController {
             stateMachine.updateSelectionCounts(selectionStore.counts)
         }
 
+        let alreadyHasCandidates = transition.effects.contains { effect in
+            if case .updateCandidates = effect { return true }
+            return false
+        }
+        if updatesMarkedText, !alreadyHasCandidates, !stateMachine.buffer.isEmpty {
+            scheduleCandidateResolution()
+        }
+
         return !transition.forwardsOriginalEvent
     }
 
-    private func scheduleExposureRecording(_ candidates: [Candidate]) {
-        pendingExposureTask?.cancel()
-        pendingExposureTask = Task { @MainActor [weak self] in
-            // Only record candidates that remain visible for a short pause.
-            // This avoids reading and atomically rewriting a growing JSON file
-            // for every intermediate letter in a composition.
-            try? await Task.sleep(nanoseconds: 300_000_000)
-            guard !Task.isCancelled, let self else { return }
-            _ = self.exposureStore.increment(candidates)
-            self.candidatePanel.updateCounts(self.exposureStore.counts)
+    private func scheduleCandidateResolution() {
+        pendingCandidateTask?.cancel()
+        let query = stateMachine.buffer
+        let snapshot = stateMachine
+        pendingCandidateTask = Task { @MainActor [weak self] in
+            // Coalesce very fast typing bursts before starting synchronous
+            // librime/SQLite work on a background executor.
+            try? await Task.sleep(nanoseconds: 10_000_000)
+            guard !Task.isCancelled else { return }
+            let resolved = await Task.detached(priority: .userInitiated) {
+                snapshot.resolvedCandidates(for: query)
+            }.value
+            guard !Task.isCancelled,
+                  let self,
+                  let transition = self.stateMachine.acceptResolvedCandidates(
+                      resolved,
+                      for: query
+                  ),
+                  let inputClient = self.client()
+            else { return }
+            _ = self.apply(transition, to: inputClient)
         }
     }
 
@@ -367,16 +396,19 @@ final class LinguaFlowInputController: IMKInputController {
         pendingTranslationTask = nil
     }
 
-    private func caretRectangle(for inputClient: any IMKTextInput) -> NSRect {
+    private func caretRectangle(
+        for inputClient: any IMKTextInput,
+        compositionIndex: Int? = nil
+    ) -> NSRect {
         // IMK expects an index relative to the active marked-text session here,
         // not the document-relative selectedRange. Passing selectedRange.location
         // makes many web editors return an empty rectangle.
-        let displayCursor = stateMachine.direction == .englishToChinese
+        let displayCursor = compositionIndex ?? (stateMachine.direction == .englishToChinese
             ? stateMachine.cursor
             : PinyinNormalizer.compositionDisplay(
                 stateMachine.buffer,
                 rawCursor: stateMachine.cursor
-            ).cursor
+            ).cursor)
         var indexes = [displayCursor]
         if displayCursor > 0 { indexes.append(displayCursor - 1) }
         indexes.append(0)
@@ -449,7 +481,8 @@ final class LinguaFlowInputController: IMKInputController {
             return (
                 CompositionStateMachine(
                     decoder: EnglishCandidateDecoder(lexicon: lexicon),
-                    direction: direction
+                    direction: direction,
+                    defersCandidateUpdates: true
                 ),
                 false
             )
@@ -470,9 +503,21 @@ final class LinguaFlowInputController: IMKInputController {
                userDataURL: userDataURL,
                lexicon: lexicon
            ) {
-            return (CompositionStateMachine(decoder: rimeDecoder), true)
+            return (
+                CompositionStateMachine(
+                    decoder: rimeDecoder,
+                    defersCandidateUpdates: true
+                ),
+                true
+            )
         }
-        return (CompositionStateMachine(lexicon: lexicon), false)
+        return (
+            CompositionStateMachine(
+                lexicon: lexicon,
+                defersCandidateUpdates: true
+            ),
+            false
+        )
     }
 
 }

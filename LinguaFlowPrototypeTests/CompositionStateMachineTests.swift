@@ -20,6 +20,39 @@ final class CompositionStateMachineTests: XCTestCase {
         })
     }
 
+    func testDeferredCandidateUpdatesReturnMarkedTextBeforeInstallingCandidates() {
+        let candidates = [
+            Candidate(
+                id: "ni",
+                pinyin: "ni",
+                sourceText: "你",
+                translation: "you",
+                frequency: 100
+            ),
+        ]
+        var machine = CompositionStateMachine(
+            lexicon: InMemoryLexicon(candidates: candidates),
+            defersCandidateUpdates: true
+        )
+
+        let transition = machine.handle(.insertLetter("n"))
+
+        XCTAssertEqual(transition.effects, [.updateMarkedText("n", cursor: 1)])
+        XCTAssertTrue(machine.allCandidates.isEmpty)
+
+        let stale = machine.resolvedCandidates(for: "n")
+        _ = machine.handle(.insertLetter("i"))
+        XCTAssertNil(machine.acceptResolvedCandidates(stale, for: "n"))
+
+        let current = machine.resolvedCandidates(for: "ni")
+        let update = machine.acceptResolvedCandidates(current, for: "ni")
+        XCTAssertEqual(machine.allCandidates.first?.sourceText, "你")
+        XCTAssertTrue(update?.effects.contains { effect in
+            if case .updateCandidates = effect { return true }
+            return false
+        } == true)
+    }
+
     func testArrowKeysWrapCandidateSelection() {
         var machine = makeMachine(with: "huiyi")
 

@@ -174,8 +174,8 @@ struct CandidateSettingsPage: View {
                     Toggle("光学悬停", isOn: $settings.magnifyingHoverEnabled)
                 }
                 HairlineDivider()
-                SettingsRow(title: "显示 Seen 次数", detail: "次数显示在中文候选词下方。") {
-                    Toggle("显示 Seen 次数", isOn: $settings.exposureCountEnabled)
+                SettingsRow(title: "显示使用次数", detail: "实际选用次数显示在中文候选词下方。") {
+                    Toggle("显示使用次数", isOn: $settings.exposureCountEnabled)
                 }
             }
             .quietAppear(order: 3)
@@ -311,8 +311,8 @@ struct LearningSettingsPage: View {
                     Toggle("语境提示", isOn: $settings.contextHintsEnabled)
                 }
                 HairlineDivider()
-                SettingsRow(title: "本机接触次数", detail: "只保存候选词标识与次数，不保存输入内容。") {
-                    Toggle("本机接触次数", isOn: $settings.exposureCountEnabled)
+                SettingsRow(title: "本机使用次数", detail: "只保存实际选用的候选词标识与次数，不保存输入内容。") {
+                    Toggle("本机使用次数", isOn: $settings.exposureCountEnabled)
                 }
             }
             .quietAppear(order: 2)

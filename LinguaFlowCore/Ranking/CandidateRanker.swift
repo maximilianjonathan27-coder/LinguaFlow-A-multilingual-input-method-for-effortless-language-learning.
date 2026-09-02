@@ -18,8 +18,8 @@ public enum CandidateRanker {
         }
         if !rimeCandidates.isEmpty {
             // Rime's returned sequence is the system's initial ranking. Only a
-            // real user commit may change order within that sequence; Seen/
-            // exposure counts are deliberately unavailable to this function.
+            // real user commit may change order within that sequence; merely
+            // displaying a candidate never changes its rank.
             let learnedRimeCandidates = rimeCandidates.sorted { lhs, rhs in
                 let lhsScore = adaptiveRimeScore(
                     originalIndex: lhs.offset,

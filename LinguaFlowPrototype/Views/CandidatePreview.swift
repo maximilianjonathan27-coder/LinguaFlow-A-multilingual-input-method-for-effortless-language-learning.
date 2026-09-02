@@ -130,7 +130,7 @@ struct CandidatePreview: View {
             Text(candidate.source)
                 .font(.system(size: fontSize, weight: .semibold, design: .rounded))
             if settings.exposureCountEnabled {
-                Text("Seen \(candidate.count)×")
+                Text("Used \(candidate.count)×")
                     .font(.system(size: 10.5, weight: .medium, design: .rounded))
                     .foregroundStyle(.tertiary)
             }
