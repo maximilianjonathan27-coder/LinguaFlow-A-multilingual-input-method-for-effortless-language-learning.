@@ -7,6 +7,7 @@ struct ContentView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var installer = InputMethodInstaller()
     @State private var isShowingResetConfirmation = false
+    @State private var isShowingTranslationTest = false
 
     private var totalSeenCount: Int {
         exposureStore.counts.values.reduce(0, +)
@@ -17,6 +18,7 @@ struct ContentView: View {
             header
             installationCard
             learningCard
+            translationTestCard
             privacyNote
         }
         .padding(32)
@@ -37,6 +39,9 @@ struct ContentView: View {
             Button("取消", role: .cancel) {}
         } message: {
             Text("所有候选词的 Seen count 都会归零，这个操作无法撤销。")
+        }
+        .sheet(isPresented: $isShowingTranslationTest) {
+            TranslationTestContainerView()
         }
     }
 
@@ -151,9 +156,35 @@ struct ContentView: View {
         .background(Color.primary.opacity(0.035), in: RoundedRectangle(cornerRadius: 14))
     }
 
+    private var translationTestCard: some View {
+        HStack(spacing: 16) {
+            Image(systemName: "translate")
+                .font(.system(size: 22, weight: .medium))
+                .foregroundStyle(.tint)
+                .frame(width: 34)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text("本地句子翻译实验")
+                    .font(.headline)
+                Text("使用 Apple 设备端模型比较翻译质量和响应时间")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            Button("打开测试") {
+                isShowingTranslationTest = true
+            }
+            .buttonStyle(.borderedProminent)
+        }
+        .padding(18)
+        .background(Color.primary.opacity(0.035), in: RoundedRectangle(cornerRadius: 14))
+    }
+
     private var privacyNote: some View {
         Label(
-            "完全离线 · 不使用网络或 AI · 不保存输入历史 · 不申请辅助功能或输入监控权限",
+            "输入法完全离线 · 翻译实验在设备端运行 · 不保存输入历史 · 不申请输入监控权限",
             systemImage: "lock.shield"
         )
         .font(.footnote)

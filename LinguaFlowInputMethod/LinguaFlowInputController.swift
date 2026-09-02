@@ -16,6 +16,8 @@ final class LinguaFlowInputController: IMKInputController {
     private lazy var selectionStore = SelectionStore()
     private var lastExposedCandidateIDs: [String] = []
     private var pendingExposureTask: Task<Void, Never>?
+    private var pendingTranslationTask: Task<Void, Never>?
+    private lazy var sentenceTranslator = LocalSentenceTranslator()
     private var lastCaretRectangle = NSRect.zero
     private lazy var candidatePanel: CandidatePanelController = {
         let controller = CandidatePanelController()
@@ -307,8 +309,10 @@ final class LinguaFlowInputController: IMKInputController {
                     counts: exposureStore.counts,
                     anchor: caretRectangle(for: inputClient)
                 )
+                scheduleSentenceTranslation(for: stateMachine.allCandidates)
 
             case .hideCandidates:
+                cancelSentenceTranslation()
                 candidatePanel.hide()
                 lastExposedCandidateIDs = []
 
@@ -342,6 +346,31 @@ final class LinguaFlowInputController: IMKInputController {
             _ = self.exposureStore.increment(candidates)
             self.candidatePanel.updateCounts(self.exposureStore.counts)
         }
+    }
+
+    private func scheduleSentenceTranslation(for candidates: [Candidate]) {
+        pendingTranslationTask?.cancel()
+        let query = stateMachine.displayedBuffer
+        let requests = sentenceTranslator.requests(from: candidates)
+        guard !requests.isEmpty else {
+            pendingTranslationTask = nil
+            return
+        }
+
+        let cached = sentenceTranslator.cachedResults(for: requests)
+        candidatePanel.updateTranslations(cached, forQuery: query)
+
+        pendingTranslationTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            let results = await self.sentenceTranslator.translate(requests)
+            guard !Task.isCancelled, self.stateMachine.displayedBuffer == query else { return }
+            self.candidatePanel.updateTranslations(results, forQuery: query)
+        }
+    }
+
+    private func cancelSentenceTranslation() {
+        pendingTranslationTask?.cancel()
+        pendingTranslationTask = nil
     }
 
     private func caretRectangle(for inputClient: any IMKTextInput) -> NSRect {

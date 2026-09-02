@@ -92,6 +92,13 @@ final class CandidatePanelController {
         model.counts = counts
     }
 
+    func updateTranslations(_ translations: [String: String], forQuery query: String) {
+        guard currentQuery == query, !translations.isEmpty else { return }
+        compactCandidates = compactCandidates.map { replacingTranslation(in: $0, using: translations) }
+        expandedCandidates = expandedCandidates.map { replacingTranslation(in: $0, using: translations) }
+        updateVisibleCandidates()
+    }
+
     func setExpanded(_ expanded: Bool) {
         guard model.isExpanded != expanded else { return }
         model.isExpanded = expanded
@@ -180,6 +187,26 @@ final class CandidatePanelController {
         model.selectedIndex = selectedCandidateID.flatMap { selectedID in
             model.candidates.firstIndex { $0.id == selectedID }
         } ?? 0
+    }
+
+    private func replacingTranslation(
+        in candidate: Candidate,
+        using translations: [String: String]
+    ) -> Candidate {
+        guard let translation = translations[candidate.id],
+              translation != candidate.translation
+        else { return candidate }
+        return Candidate(
+            id: candidate.id,
+            pinyin: candidate.pinyin,
+            sourceText: candidate.sourceText,
+            translation: translation,
+            frequency: candidate.frequency,
+            targetLanguage: candidate.targetLanguage,
+            partOfSpeech: candidate.partOfSpeech,
+            domain: candidate.domain,
+            style: candidate.style
+        )
     }
 
     private func positionPanel() {
