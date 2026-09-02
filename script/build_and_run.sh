@@ -34,6 +34,45 @@ if [[ "$SIGNING_IDENTITY" == "-" ]]; then
   echo "Using ad-hoc local signing." >&2
 fi
 
+librime_library_path() {
+  if [[ -n "${LINGUAFLOW_RIME_LIBRARY:-}" && -f "$LINGUAFLOW_RIME_LIBRARY" ]]; then
+    printf '%s\n' "$LINGUAFLOW_RIME_LIBRARY"
+    return 0
+  fi
+  local candidate
+  for candidate in \
+    /opt/homebrew/opt/librime/lib/librime.1.dylib \
+    /usr/local/opt/librime/lib/librime.1.dylib; do
+    if [[ -f "$candidate" ]]; then
+      printf '%s\n' "$candidate"
+      return 0
+    fi
+  done
+  return 1
+}
+
+ensure_librime() {
+  local library
+  if library="$(librime_library_path)"; then
+    echo "librime ready: $library"
+    return
+  fi
+
+  if ! command -v brew >/dev/null 2>&1; then
+    echo "LinguaFlow requires librime, but Homebrew is not installed." >&2
+    echo "Install Homebrew from https://brew.sh, then run this command again." >&2
+    return 1
+  fi
+
+  echo "librime is missing; installing it automatically with Homebrew..."
+  HOMEBREW_NO_AUTO_UPDATE=1 brew install librime
+  library="$(librime_library_path)" || {
+    echo "Homebrew finished, but librime.1.dylib was not found." >&2
+    return 1
+  }
+  echo "librime installed: $library"
+}
+
 stop_processes() {
   pkill -x "$APP_NAME" >/dev/null 2>&1 || true
   pkill -x "$IME_NAME" >/dev/null 2>&1 || true
@@ -57,9 +96,30 @@ build_app() {
 }
 
 build_ime() {
+  ensure_librime
   build_lexicon
   build_examples
   xcodebuild_common -scheme LinguaFlowInputMethod build
+}
+
+verify_rime_runtime() {
+  local probe user_data
+  probe="$DERIVED_DATA/rime_bridge_probe"
+  user_data="$DERIVED_DATA/RimeProbeUser"
+  rm -rf "$user_data"
+  mkdir -p "$user_data"
+
+  xcrun clang \
+    "$ROOT_DIR/script/rime_bridge_probe.c" \
+    "$ROOT_DIR/LinguaFlowInputMethod/Rime/LFRimeBridge.c" \
+    -I "$ROOT_DIR/LinguaFlowInputMethod/Rime" \
+    -o "$probe"
+  "$probe" \
+    "$IME_BUNDLE/Contents/Resources/Rime" \
+    "$user_data" \
+    "wo'bu'zhi'd'z'm'z"
+  rm -rf "$user_data"
+  echo "librime runtime and mixed-Pinyin decoding are available."
 }
 
 test_app() {
@@ -219,12 +279,15 @@ case "$MODE" in
   --install-ime|install-ime)
     previous_input_source="$(xcrun swift "$ROOT_DIR/script/register_input_source.swift" --current 2>/dev/null || true)"
     stop_processes
+    ensure_librime
     build_app
+    verify_rime_runtime
     install_preferences_app
     install_ime_from_build "$previous_input_source"
     ;;
   --verify-ime|verify-ime)
     build_ime
+    verify_rime_runtime
     verify_ime
     ;;
   --build-lexicon|build-lexicon)

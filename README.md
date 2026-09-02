@@ -78,6 +78,13 @@ Build and install locally with:
 ./script/build_and_run.sh --install-ime
 ```
 
+The install command verifies the native `librime` runtime before copying the
+input method. If Homebrew is available but `librime` is missing, it installs the
+dependency automatically and then runs a real mixed-Pinyin decoding probe. This
+prevents another Mac from silently falling back to the slower legacy decoder.
+Merely downloading the source ZIP cannot execute dependency installation; run
+the command above once after downloading.
+
 The install command also places a Finder- and Launchpad-visible
 **LinguaFlow.app** in `/Applications`. Opening it launches the preferences
 window. The input method service remains installed separately in the current

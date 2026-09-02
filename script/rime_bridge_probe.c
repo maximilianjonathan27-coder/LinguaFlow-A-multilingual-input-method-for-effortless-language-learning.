@@ -3,10 +3,12 @@
 #include <stdio.h>
 
 int main(int argc, char **argv) {
-    const char *input = argc > 1 ? argv[1] : "nihao";
+    const char *shared_data_dir = argc > 1 ? argv[1] : ".build/RimeShared";
+    const char *user_data_dir = argc > 2 ? argv[2] : ".build/RimeBridgeUser";
+    const char *input = argc > 3 ? argv[3] : "nihao";
     if (!LFRimeInitialize(
-            ".build/DerivedData/Build/Products/Debug/LinguaFlow.app/Contents/Resources/Rime",
-            ".build/RimeBridgeUser",
+            shared_data_dir,
+            user_data_dir,
             "linguaflow_pinyin")) {
         fprintf(stderr, "Rime initialization failed: %s\n", LFRimeLastError());
         return 1;
