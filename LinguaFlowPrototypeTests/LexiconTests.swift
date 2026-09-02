@@ -123,6 +123,7 @@ final class LexiconTests: XCTestCase {
             ("b", "吧", ["把", "被", "不", "本", "边", "吧"]),
             ("m", "吗", ["吗", "没", "么"]),
             ("l", "了", ["来", "里", "老", "啦", "了"]),
+            ("n", "呢", ["你", "那", "能", "年", "呢"]),
         ]
 
         for expectation in expectations {

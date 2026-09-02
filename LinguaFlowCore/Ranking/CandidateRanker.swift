@@ -5,6 +5,7 @@ public enum CandidateRanker {
         "b": "吧",
         "m": "吗",
         "l": "了",
+        "n": "呢",
     ]
 
     public static func rank(

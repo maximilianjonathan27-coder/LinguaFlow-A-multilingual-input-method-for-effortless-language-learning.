@@ -36,6 +36,150 @@ struct TranslationTestContainerView: View {
 
 #if canImport(Translation)
 @available(macOS 15.0, *)
+struct AppleTranslationPreparationView: View {
+    private enum PreparationState {
+        case checking
+        case ready
+        case available
+        case unsupported
+        case preparing
+        case failed(String)
+    }
+
+    private let source = Locale.Language(identifier: "zh-Hans")
+    private let target = Locale.Language(identifier: "en")
+
+    @State private var state: PreparationState = .checking
+    @State private var configuration: TranslationSession.Configuration?
+
+    var body: some View {
+        PremiumGlassSurface(cornerRadius: 18, interactive: true) {
+            HStack(spacing: 15) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(statusColor.opacity(0.12))
+                        .frame(width: 43, height: 43)
+                    Image(systemName: statusSymbol)
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(statusColor)
+                }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Apple 离线句子翻译")
+                        .font(.system(size: 14.5, weight: .semibold))
+                    Text(statusDetail)
+                        .font(.system(size: 12.5))
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Spacer(minLength: 16)
+
+                Button(buttonTitle) { requestPreparation() }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(!canPrepare)
+
+                if case .preparing = state {
+                    ProgressView().controlSize(.small)
+                }
+            }
+            .padding(18)
+        }
+        .task { await refreshAvailability() }
+        .translationTask(configuration) { session in
+            Task { @MainActor in
+                guard case .preparing = state else { return }
+                do {
+                    try await session.prepareTranslation()
+                    await refreshAvailability()
+                } catch is CancellationError {
+                    state = .available
+                } catch {
+                    let detail = error.localizedDescription
+                    state = .failed(detail.isEmpty ? "系统未能完成语言资源下载。" : detail)
+                }
+            }
+        }
+    }
+
+    private var canPrepare: Bool {
+        switch state {
+        case .available, .failed: true
+        default: false
+        }
+    }
+
+    private var buttonTitle: String {
+        switch state {
+        case .ready: "已就绪"
+        case .preparing: "正在准备"
+        case .checking: "正在检查"
+        case .unsupported: "系统不支持"
+        case .available, .failed: "下载语言资源"
+        }
+    }
+
+    private var statusDetail: String {
+        switch state {
+        case .checking:
+            "正在检查简体中文与英语语言资源。"
+        case .ready:
+            "简体中文 → 英语已安装，输入法可直接使用本地句子翻译。"
+        case .available:
+            "尚未安装。点击后由 macOS 请求你的许可并下载官方语言资源。"
+        case .unsupported:
+            "当前系统不支持简体中文与英语的本地翻译组合。"
+        case .preparing:
+            "请在 macOS 官方窗口中确认下载。"
+        case let .failed(message):
+            "准备失败：\(message)"
+        }
+    }
+
+    private var statusSymbol: String {
+        switch state {
+        case .ready: "checkmark.circle.fill"
+        case .failed, .unsupported: "exclamationmark.triangle.fill"
+        case .checking, .preparing: "arrow.triangle.2.circlepath"
+        case .available: "arrow.down.circle.fill"
+        }
+    }
+
+    private var statusColor: Color {
+        switch state {
+        case .ready: .green
+        case .failed, .unsupported: .orange
+        case .checking, .preparing: .blue
+        case .available: Color.accentColor
+        }
+    }
+
+    private func requestPreparation() {
+        state = .preparing
+        if configuration == nil {
+            configuration = TranslationSession.Configuration(source: source, target: target)
+        } else {
+            configuration?.invalidate()
+        }
+    }
+
+    @MainActor
+    private func refreshAvailability() async {
+        let status = await LanguageAvailability().status(from: source, to: target)
+        switch status {
+        case .installed:
+            state = .ready
+        case .supported:
+            state = .available
+        case .unsupported:
+            state = .unsupported
+        @unknown default:
+            state = .unsupported
+        }
+    }
+}
+
+@available(macOS 15.0, *)
 private struct AppleTranslationTestView: View {
     private static let samples = [
         "我在想这个问题应该怎么解决。",

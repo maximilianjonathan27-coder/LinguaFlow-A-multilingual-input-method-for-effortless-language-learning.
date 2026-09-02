@@ -211,6 +211,24 @@ struct TranslationSettingsPage: View {
             }
             .quietAppear(order: 1)
 
+#if canImport(Translation)
+            if #available(macOS 26.0, *) {
+                AppleTranslationPreparationView()
+                    .quietAppear(order: 2)
+            } else {
+                Label(
+                    "Apple 本地句子翻译需要 macOS 26 或更高版本。候选词典翻译仍可正常使用。",
+                    systemImage: "info.circle"
+                )
+                .font(.system(size: 12.5))
+                .foregroundStyle(.secondary)
+                .padding(15)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.secondary.opacity(0.055), in: RoundedRectangle(cornerRadius: 14))
+                .quietAppear(order: 2)
+            }
+#endif
+
             SettingsGroup(title: "表达方式") {
                 SettingsRow(title: "翻译风格", detail: "影响预览中的措辞密度与学习提示。") {
                     Picker("翻译风格", selection: $settings.translationStyle) {
@@ -231,7 +249,7 @@ struct TranslationSettingsPage: View {
                     .frame(width: 170)
                 }
             }
-            .quietAppear(order: 2)
+            .quietAppear(order: 3)
 
             VStack(alignment: .leading, spacing: 10) {
                 Text("语言变化预览")
@@ -240,7 +258,7 @@ struct TranslationSettingsPage: View {
                     .padding(.leading, 4)
                 CandidatePreview(settings: settings, compact: true)
             }
-            .quietAppear(order: 3)
+            .quietAppear(order: 4)
         }
     }
 }
