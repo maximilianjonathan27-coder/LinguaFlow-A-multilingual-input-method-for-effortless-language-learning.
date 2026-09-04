@@ -9,6 +9,9 @@
 
 typedef RimeApi *(*LFRimeGetApiFunction)(void);
 
+// X11-compatible key symbol expected by librime's process_key API.
+#define LF_RIME_KEY_BACKSPACE 0xff08
+
 static pthread_mutex_t lf_rime_lock = PTHREAD_MUTEX_INITIALIZER;
 static void *lf_rime_library = NULL;
 static RimeApi *lf_rime_api = NULL;
@@ -42,6 +45,69 @@ static void *LFRimeOpenLibrary(void) {
     }
     LFRimeSetError(dlerror());
     return NULL;
+}
+
+static bool LFRimeReplaceInput(const char *input) {
+    lf_rime_api->clear_composition(lf_rime_session);
+    return lf_rime_api->set_input(lf_rime_session, input);
+}
+
+// Reconcile the persistent librime session with the requested full input.
+// Ordinary typing and trailing backspace only send the changed key. Cursor
+// edits, stale asynchronous requests, or any rejected incremental event fall
+// back to set_input, keeping behavior identical to the previous implementation.
+static bool LFRimeApplyInputIncrementally(const char *input) {
+    if (!lf_rime_api->get_input || !lf_rime_api->process_key) {
+        return LFRimeReplaceInput(input);
+    }
+
+    const char *current = lf_rime_api->get_input(lf_rime_session);
+    if (!current) {
+        return LFRimeReplaceInput(input);
+    }
+    if (strcmp(current, input) == 0) {
+        return true;
+    }
+
+    size_t current_length = strlen(current);
+    size_t target_length = strlen(input);
+    size_t common_length = 0;
+    size_t shorter_length = current_length < target_length
+        ? current_length
+        : target_length;
+    while (common_length < shorter_length
+           && current[common_length] == input[common_length]) {
+        ++common_length;
+    }
+
+    bool applied = true;
+    if (common_length == current_length) {
+        for (size_t index = current_length; index < target_length; ++index) {
+            unsigned char key = (unsigned char)input[index];
+            if (key > 0x7f || !lf_rime_api->process_key(lf_rime_session, key, 0)) {
+                applied = false;
+                break;
+            }
+        }
+    } else if (common_length == target_length) {
+        for (size_t index = target_length; index < current_length; ++index) {
+            if (!lf_rime_api->process_key(
+                    lf_rime_session,
+                    LF_RIME_KEY_BACKSPACE,
+                    0)) {
+                applied = false;
+                break;
+            }
+        }
+    } else {
+        applied = false;
+    }
+
+    const char *updated = applied ? lf_rime_api->get_input(lf_rime_session) : NULL;
+    if (!updated || strcmp(updated, input) != 0) {
+        return LFRimeReplaceInput(input);
+    }
+    return true;
 }
 
 static void LFRimeShutdown(void) {
@@ -136,8 +202,7 @@ int LFRimeGetCandidates(
         return 0;
     }
 
-    lf_rime_api->clear_composition(lf_rime_session);
-    if (!lf_rime_api->set_input(lf_rime_session, input)) {
+    if (!LFRimeApplyInputIncrementally(input)) {
         LFRimeSetError("librime rejected the input");
         pthread_mutex_unlock(&lf_rime_lock);
         return 0;
